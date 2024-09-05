@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recurring Invoice Stopped</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        color: #333;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: 20px auto;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+      h1 {
+        color: #e74c3c;
+      }
+      .footer {
+        margin-top: 20px;
+        font-size: 0.9em;
+        color: #777;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Recurring Invoice Stopped</h1>
+      <p>Dear {{client_name}},</p>
+      <p>
+        We wanted to inform you that your recurring invoice with the number
+        <strong>{{invoice_no}}</strong> has been stopped.
+      </p>
+
+      {{#if is_stopped_due_to_product}}
+      <p>
+        This action was taken because one or more products associated with this
+        recurring invoice are no longer available.
+      </p>
+      {{else}}
+      <p>This action was taken as requested by the business.</p>
+      {{/if}}
+
+      <p>
+        If you have any questions or need further assistance, please feel free
+        to contact us at {{business_email}} or reply to this email.
+      </p>
+      <p>Thank you for your attention to this matter.</p>
+      <p>Best regards,</p>
+      <p>{{business_name}}</p>
+      <p class="footer">
+        {{business_address}}<br />
+        {{business_phone}}<br />
+        <a href="mailto:{{business_email}}">{{business_email}}</a>
+      </p>
+    </div>
+  </body>
+</html>

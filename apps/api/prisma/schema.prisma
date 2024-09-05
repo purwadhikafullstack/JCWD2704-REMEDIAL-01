@@ -10,12 +10,161 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Sample {
-  id        Int      @id @default(autoincrement())
-  name      String
-  code      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// model Sample {
+//   id        Int      @id @default(autoincrement())
+//   name      String
+//   code      String   @unique
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
 
-  @@map("samples") // if you want to use snake_case format
+//   @@map("samples") // if you want to use snake_case format
+// }
+
+model User {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  password       String?
+  first_name     String?
+  last_name      String?
+  is_verified    Boolean   @default(false)
+  image          Bytes?    @db.LongBlob
+  reqEmailChange Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  Business       Business?
+}
+
+model Business {
+  id           String    @id @default(cuid())
+  user         User      @relation(fields: [user_id], references: [id])
+  user_id      String    @unique
+  name         String
+  address      String?
+  bank         String?
+  bank_account String?
+  logo         Bytes     @db.LongBlob
+  phone        String?
+  email        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  Client       Client[]
+  Product      Product[]
+  Invoice      Invoice[]
+}
+
+enum Payment {
+  debit
+  credit
+  bank_transfer
+}
+
+model Client {
+  id                 String    @id @default(cuid())
+  business           Business  @relation(fields: [business_id], references: [id])
+  business_id        String
+  name               String
+  phone              String?
+  email              String
+  address            String?
+  payment_preference Payment?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
+  Invoice            Invoice[]
+}
+
+enum Type {
+  goods
+  service
+}
+
+model Product {
+  id          String        @id @default(cuid())
+  business    Business      @relation(fields: [business_id], references: [id])
+  business_id String
+  name        String
+  description String?       @db.Text
+  price       Float
+  type        Type
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  deletedAt   DateTime?
+  InvoiceItem InvoiceItem[]
+}
+
+enum Status {
+  pending
+  unpaid
+  paid
+  expired
+  cancelled
+}
+
+enum Value {
+  nominal
+  percentage
+}
+
+model Invoice {
+  id                 String             @id @default(cuid())
+  business           Business           @relation(fields: [business_id], references: [id])
+  business_id        String
+  client             Client             @relation(fields: [client_id], references: [id])
+  client_id          String
+  no_invoice         String
+  invoice_date       DateTime
+  total_price        Float
+  shipping_cost      Float?
+  discount_type      Value?
+  discount           Float?
+  tax_type           Value?
+  tax                Float?
+  status             Status
+  recurring          Boolean
+  recurring_interval Int?
+  payment_method     Payment
+  payment_terms      Int
+  due_date           DateTime
+  recurring_end      DateTime?
+  idNowRecurring     String?
+  paidAt             DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  deletedAt          DateTime?
+  cancelledAt        DateTime?
+  InvoiceItem        InvoiceItem[]
+  RecurringInvoice   RecurringInvoice[]
+}
+
+model InvoiceItem {
+  id          String   @id @default(cuid())
+  invoice     Invoice  @relation(fields: [invoice_id], references: [id])
+  invoice_id  String
+  product     Product  @relation(fields: [product_id], references: [id])
+  product_id  String
+  quantity    Int
+  price       Float
+  total_price Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model RecurringInvoice {
+  id            String    @id @default(cuid())
+  invoice       Invoice   @relation(fields: [invoice_id], references: [id])
+  invoice_id    String
+  no_invoice    String
+  invoice_date  DateTime
+  total_price   Float
+  shipping_cost Float?
+  discount_type Value?
+  discount      Float?
+  tax_type      Value?
+  tax           Float?
+  status        Status
+  due_date      DateTime
+  paidAt        DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  cancelledAt   DateTime?
 }

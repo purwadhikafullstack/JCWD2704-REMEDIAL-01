@@ -1,0 +1,321 @@
+<!-- <!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your Invoice from {{business_name}}</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 0;
+      }
+
+      .email-container {
+        max-width: 800px;
+        margin: 40px auto;
+        background-color: #ffffff;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+
+      .header {
+        text-align: center;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #dddddd;
+      }
+
+      .header h1 {
+        color: #333333;
+        font-size: 24px;
+      }
+
+      .business-info,
+      .client-info {
+        margin-bottom: 20px;
+      }
+
+      .business-info h2,
+      .client-info h2 {
+        font-size: 18px;
+        color: #333333;
+        margin-bottom: 10px;
+      }
+
+      .business-info p,
+      .client-info p {
+        font-size: 16px;
+        color: #666666;
+        margin: 0;
+      }
+
+      .invoice-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+
+      .invoice-table th,
+      .invoice-table td {
+        padding: 12px;
+        border: 1px solid #dddddd;
+        text-align: left;
+        font-size: 16px;
+        color: #333333;
+      }
+
+      .invoice-table th {
+        background-color: #f2c675;
+        color: #ffffff;
+      }
+
+      .totals {
+        margin-top: 20px;
+        text-align: right;
+      }
+
+      .totals p {
+        font-size: 16px;
+        color: #333333;
+        margin: 5px 0;
+      }
+
+      .footer {
+        text-align: center;
+        padding-top: 20px;
+        border-top: 1px solid #dddddd;
+        margin-top: 40px;
+      }
+
+      .footer p {
+        font-size: 14px;
+        color: #aaaaaa;
+        margin: 0;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="email-container">
+      <div class="header">
+        <h1>Your Invoice from {{business_name}}</h1>
+      </div>
+
+      <div class="business-info">
+        <h2>Business Information</h2>
+        <p><strong>{{business_name}}</strong></p>
+        <p>{{business_address}}</p>
+        <p>Email: {{business_email}}</p>
+        <p>Phone: {{business_phone}}</p>
+      </div>
+
+      <div class="client-info">
+        <h2>Billing Information</h2>
+        <p><strong>{{client_name}}</strong></p>
+        <p>{{client_billing_address}}</p>
+        <p>Email: {{client_email}}</p>
+        <p>Phone: {{client_phone}}</p>
+      </div>
+
+      <table class="invoice-table">
+        <thead>
+          <tr>
+            <th>Item Description</th>
+            <th>Quantity</th>
+            <th>Unit Price</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each items}}
+          <tr>
+            <td>{{description}}</td>
+            <td>{{quantity}}</td>
+            <td>{{unit_price}}</td>
+            <td>{{total}}</td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+
+      <div class="totals">
+        <p><strong>Subtotal:</strong> {{subtotal}}</p>
+        <p><strong>Tax ({{tax_rate}}%):</strong> {{tax_amount}}</p>
+        <p><strong>Discount:</strong> {{discount}}</p>
+        <p><strong>Shipping:</strong> {{shipping_cost}}</p>
+        <p>
+          <strong>Total Amount Due:</strong>
+          <strong>{{total_amount_due}}</strong>
+        </p>
+      </div>
+
+      <div class="footer">
+        <p>Thank you for your business!</p>
+        <p>&copy; 2024 {{business_name}}. All rights reserved.</p>
+      </div>
+    </div>
+  </body>
+</html> -->
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your Invoice from {{business_name}}</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 0;
+      }
+
+      .email-container {
+        max-width: 800px;
+        margin: 40px auto;
+        background-color: #ffffff;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+
+      .header {
+        text-align: center;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #dddddd;
+      }
+
+      .header h1 {
+        color: #333333;
+        font-size: 24px;
+      }
+
+      .business-info,
+      .client-info {
+        margin-bottom: 20px;
+      }
+
+      .business-info h2,
+      .client-info h2 {
+        font-size: 18px;
+        color: #333333;
+        margin-bottom: 10px;
+      }
+
+      .business-info p,
+      .client-info p {
+        font-size: 16px;
+        color: #666666;
+        margin: 0;
+      }
+
+      .invoice-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+
+      .invoice-table th,
+      .invoice-table td {
+        padding: 12px;
+        border: 1px solid #dddddd;
+        text-align: left;
+        font-size: 16px;
+        color: #333333;
+      }
+
+      .invoice-table th {
+        background-color: #f2c675;
+        color: #ffffff;
+      }
+
+      .totals {
+        margin-top: 20px;
+        text-align: right;
+      }
+
+      .totals p {
+        font-size: 16px;
+        color: #333333;
+        margin: 5px 0;
+      }
+
+      .footer {
+        text-align: center;
+        padding-top: 20px;
+        border-top: 1px solid #dddddd;
+        margin-top: 40px;
+      }
+
+      .footer p {
+        font-size: 14px;
+        color: #aaaaaa;
+        margin: 0;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="email-container">
+      <div class="header">
+        <h1>Your Invoice from {{business_name}}</h1>
+      </div>
+
+      <div class="business-info">
+        <h2>Business Information</h2>
+        <p><strong>{{business_name}}</strong></p>
+        <p>{{business_address}}</p>
+        <p>Email: {{business_email}}</p>
+        <p>Phone: {{business_phone}}</p>
+      </div>
+
+      <div class="client-info">
+        <h2>Billing Information</h2>
+        <p><strong>{{client_name}}</strong></p>
+        <p>{{client_address}}</p>
+        <p>Email: {{client_email}}</p>
+        <p>Phone: {{client_phone}}</p>
+      </div>
+
+      <table class="invoice-table">
+        <thead>
+          <tr>
+            <th>Item Name</th>
+            <th>Quantity</th>
+            <th>Unit Price</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each items}}
+          <tr>
+            <td>{{name}}</td>
+            <td>{{quantity}}</td>
+            <td>{{unit_price}}</td>
+            <td>{{total}}</td>
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+
+      <div class="totals">
+        <p><strong>Subtotal:</strong> {{subtotal}}</p>
+        <p><strong>Tax ({{tax_rate}}%):</strong> {{tax_amount}}</p>
+        <p><strong>Discount:</strong> {{discount}}</p>
+        <p><strong>Shipping:</strong> {{shipping_cost}}</p>
+        <p>
+          <strong>Total Amount Due:</strong>
+          <strong>{{total_amount_due}}</strong>
+        </p>
+      </div>
+
+      <div class="footer">
+        <p>Thank you for your business!</p>
+        <p>&copy; 2024 {{business_name}}. All rights reserved.</p>
+      </div>
+    </div>
+  </body>
+</html>
