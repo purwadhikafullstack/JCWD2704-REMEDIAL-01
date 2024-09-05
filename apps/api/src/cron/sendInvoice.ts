@@ -63,7 +63,7 @@ const sendInvoiceEmails = async () => {
       business_email: invoice.business.email,
       business_phone: invoice.business.phone,
       client_name: invoice.client.name,
-      client_address: invoice.client.billing_address,
+      client_address: invoice.client.address,
       client_email: invoice.client.email,
       client_phone: invoice.client.phone,
       items: invoiceItems.map((item) => ({
