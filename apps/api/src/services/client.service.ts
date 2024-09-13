@@ -16,6 +16,12 @@ class ClientService {
 
     if (!business) throw new Error('business not found');
 
+    const checkClient = await prisma.client.findFirst({
+      where: { business_id: business.id, email: email },
+    });
+
+    if (checkClient) throw new Error('email already used');
+
     const validPaymentPreference = payment_preference || null;
 
     if (validPaymentPreference) {
@@ -168,6 +174,10 @@ class ClientService {
     }
 
     if (email !== undefined) {
+      const checkClient = await prisma.client.findFirst({
+        where: { business_id: client.business_id, email: email },
+      });
+      if (checkClient) throw new Error('email already used');
       updatedData.email = email;
     }
 

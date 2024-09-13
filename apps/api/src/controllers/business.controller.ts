@@ -27,7 +27,12 @@ export class BusinessController {
 
   async updateBusiness(req: Request, res: Response, next: NextFunction) {
     try {
-      await businessServices.update(req);
+      const result = await businessServices.update(req);
+      // res.cookie('access_token', result.token, {
+      //   secure: false,
+      //   domain: 'localhost',
+      //   sameSite: 'strict',
+      // });
       res.status(201).send({
         message: 'business updated',
       });

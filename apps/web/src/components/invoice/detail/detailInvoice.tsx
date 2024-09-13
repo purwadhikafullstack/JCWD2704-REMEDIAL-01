@@ -2,7 +2,7 @@
 
 import { axiosInstance } from '@/libs/axios';
 import { AxiosError } from 'axios';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
@@ -15,25 +15,37 @@ import ClientBusiness from './clientBusiness';
 import Terms from './terms';
 import Status from './status';
 import RecurringTable from './tableRecurring';
+import { useAppSelector } from '@/app/hooks';
+import Unauthorized from '@/components/unauthorized';
+import Loading from '@/components/loading';
 
 const DetailInvoice = () => {
   const router = useRouter();
   const { invoiceId } = useParams();
   const [invoice, setInvoice] = useState<TInvoice | null>(null);
   const [recurring, setRecurring] = useState<TRecurring | null>(null);
-  const [recurringId, setRecurringId] = useState('');
-
+  const searchParams = useSearchParams();
+  const [recurringId, setRecurringId] = useState(
+    searchParams.get('recurringId') || '',
+  );
   dayjs.extend(relativeTime);
+  const user = useAppSelector((state) => state.auth);
+  const [loadingPage, setLoadingPage] = useState(true);
+
   const fetchInvoice = async () => {
     try {
       if (invoiceId) {
         const response = await axiosInstance().get(`/invoices/${invoiceId}`);
         const product = response.data.data;
         setInvoice(product);
-        setRecurringId(product.idNowRecurring);
+        if (!recurringId) {
+          setRecurringId(product.idNowRecurring);
+        }
       }
     } catch (error) {
       console.error('Error fetching invoice data:', error);
+    } finally {
+      setLoadingPage(false);
     }
   };
 
@@ -65,7 +77,7 @@ const DetailInvoice = () => {
   const cancelInv = async () => {
     Swal.fire({
       title: 'Are you sure?',
-      text: 'Do you really want to cancel this order?',
+      text: 'Do you really want to cancel this invoice?',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Yes',
@@ -78,7 +90,7 @@ const DetailInvoice = () => {
           );
           Swal.fire({
             title: 'Success!',
-            text: 'Order has been cancelled successfully.',
+            text: 'Invoice has been cancelled successfully.',
             icon: 'success',
             confirmButtonText: 'OK',
           });
@@ -86,11 +98,11 @@ const DetailInvoice = () => {
         } catch (error) {
           Swal.fire({
             title: 'Error!',
-            text: 'Failed to cancel the order. Please try again.',
+            text: 'Failed to cancel the invoice. Please try again.',
             icon: 'error',
             confirmButtonText: 'OK',
           });
-          console.error('Failed to cancel order:', error);
+          console.error('Failed to cancel invoice:', error);
         }
       }
     });
@@ -99,7 +111,7 @@ const DetailInvoice = () => {
   const paidInv = async () => {
     Swal.fire({
       title: 'Are you sure?',
-      text: 'Do you really want to cancel this order?',
+      text: 'Do you really want to confirm this payment?',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Yes',
@@ -112,7 +124,7 @@ const DetailInvoice = () => {
           );
           Swal.fire({
             title: 'Success!',
-            text: 'Order has been cancelled successfully.',
+            text: 'Invoice has been cancelled successfully.',
             icon: 'success',
             confirmButtonText: 'OK',
           });
@@ -120,11 +132,11 @@ const DetailInvoice = () => {
         } catch (error) {
           Swal.fire({
             title: 'Error!',
-            text: 'Failed to cancel the order. Please try again.',
+            text: 'Failed to cancel the invoice. Please try again.',
             icon: 'error',
             confirmButtonText: 'OK',
           });
-          console.error('Failed to cancel order:', error);
+          console.error('Failed to cancel invoice:', error);
         }
       }
     });
@@ -132,82 +144,96 @@ const DetailInvoice = () => {
 
   return (
     <>
-      <section className="tracking-tighter m-10 bg-white p-10 rounded-xl h-full shadow-md flex flex-col gap-5">
-        <div className=" flex items-center justify-between w-full">
-          <div className="text-3xl font-semibold">
-            Invoice{' '}
-            {invoice
-              ? `
+      {loadingPage ? (
+        <Loading />
+      ) : (
+        <>
+          {!user?.user?.is_verified || !user.business?.id ? (
+            <Unauthorized page={`invoice`} user={user} />
+          ) : (
+            <>
+              <section className="tracking-tighter m-10 bg-white p-10 rounded-xl h-full shadow-md flex flex-col gap-5">
+                <div className=" flex items-center justify-between w-full">
+                  <div className="text-3xl font-semibold">
+                    Invoice{' '}
+                    {invoice
+                      ? `
             ${
               invoice?.recurring && recurring
                 ? `#${recurring?.no_invoice}`
                 : `#${invoice?.no_invoice}`
             }`
-              : ''}
-          </div>
-          <div className="flex flex-col items-end">
-            {invoice && (
-              <>
-                {invoice.recurring && recurring ? (
-                  <div
-                    className={`border-2 w-32 capitalize  text-center font-semibold px-2 py-1 h-full rounded-full ${recurring.status === 'cancelled' || recurring.status === 'expired' ? 'border-gray-400 text-gray-500 bg-gray-100' : recurring.status === 'paid' ? 'border-green-400 text-green-500 bg-green-100' : recurring.status === 'unpaid' ? 'border-amber-400 text-amber-500 bg-amber-100' : 'border-blue-400 text-blue-500 bg-blue-100'}`}
-                  >
-                    {recurring.status}
+                      : ''}
                   </div>
-                ) : (
-                  <div
-                    className={`border-2 w-32 capitalize  text-center font-semibold px-2 py-1 h-full rounded-full ${invoice.status === 'cancelled' || invoice.status === 'expired' ? 'border-gray-400 text-gray-500 bg-gray-100' : invoice.status === 'paid' ? 'border-green-400 text-green-500 bg-green-100' : invoice.status === 'unpaid' ? 'border-amber-400 text-amber-500 bg-amber-100' : 'border-blue-400 text-blue-500 bg-blue-100'}`}
-                  >
-                    {invoice.status}
+                  <div className="flex flex-col items-end">
+                    {invoice && (
+                      <>
+                        {invoice.recurring && recurring ? (
+                          <div
+                            className={`border-2 w-32 capitalize  text-center font-semibold px-2 py-1 h-full rounded-full ${recurring.status === 'cancelled' || recurring.status === 'expired' ? 'border-gray-400 text-gray-500 bg-gray-100' : recurring.status === 'paid' ? 'border-green-400 text-green-500 bg-green-100' : recurring.status === 'unpaid' ? 'border-amber-400 text-amber-500 bg-amber-100' : 'border-blue-400 text-blue-500 bg-blue-100'}`}
+                          >
+                            {recurring.status}
+                          </div>
+                        ) : (
+                          <div
+                            className={`border-2 w-32 capitalize  text-center font-semibold px-2 py-1 h-full rounded-full ${invoice.status === 'cancelled' || invoice.status === 'expired' ? 'border-gray-400 text-gray-500 bg-gray-100' : invoice.status === 'paid' ? 'border-green-400 text-green-500 bg-green-100' : invoice.status === 'unpaid' ? 'border-amber-400 text-amber-500 bg-amber-100' : 'border-blue-400 text-blue-500 bg-blue-100'}`}
+                          >
+                            {invoice.status}
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
+                </div>
+                {invoice && (
+                  <>
+                    <Status invoice={invoice} recurring={recurring} />
+                    <ClientBusiness invoice={invoice} />
+                    <Terms invoice={invoice} recurring={recurring} />
+                    <ItemTable invoice={invoice} recurring={recurring} />
+                  </>
                 )}
-              </>
-            )}
-          </div>
-        </div>
-        {invoice && (
-          <>
-            <Status invoice={invoice} recurring={recurring} />
-            <ClientBusiness invoice={invoice} />
-            <Terms invoice={invoice} recurring={recurring} />
-            <ItemTable invoice={invoice} recurring={recurring} />
-          </>
-        )}
-        <div className="flex items-center gap-5">
-          <button
-            type="button"
-            onClick={() => router.push('/invoice')}
-            className="bg-amber-100 p-2 rounded-xl font-semibold w-36"
-          >
-            Back
-          </button>
-          {invoice?.status === 'unpaid' && (
-            <button
-              type="button"
-              onClick={cancelInv}
-              className="bg-amber-100 p-2 rounded-xl font-semibold w-36"
-            >
-              Cancel Invoice
-            </button>
+                <div className="flex items-center gap-5">
+                  <button
+                    type="button"
+                    onClick={() => router.push('/invoice')}
+                    className="bg-amber-100 p-2 rounded-xl font-semibold w-36"
+                  >
+                    Back
+                  </button>
+                  {(invoice?.status === 'unpaid' ||
+                    invoice?.status === 'pending') && (
+                    <button
+                      type="button"
+                      onClick={cancelInv}
+                      className="bg-amber-200 p-2 rounded-xl font-semibold w-36"
+                    >
+                      Cancel Invoice
+                    </button>
+                  )}
+                  {invoice?.status === 'unpaid' && (
+                    <button
+                      type="button"
+                      onClick={paidInv}
+                      className="bg-amber-300 p-2 rounded-xl font-semibold w-36"
+                    >
+                      Confirm Paid
+                    </button>
+                  )}
+                </div>
+              </section>
+              {invoice && invoice.recurring && (
+                <RecurringTable
+                  invoice={invoice}
+                  invoiceId={invoiceId}
+                  recurringId={recurringId}
+                  setRecurringId={setRecurringId}
+                  recurring={recurring}
+                />
+              )}{' '}
+            </>
           )}
-          {invoice?.status === 'unpaid' && (
-            <button
-              type="button"
-              onClick={paidInv}
-              className="bg-amber-100 p-2 rounded-xl font-semibold w-36"
-            >
-              Confirm Paid
-            </button>
-          )}
-        </div>
-      </section>
-      {invoice && invoice.recurring && (
-        <RecurringTable
-          invoice={invoice}
-          invoiceId={invoiceId}
-          setRecurringId={setRecurringId}
-          recurring={recurring}
-        />
+        </>
       )}
     </>
   );

@@ -20,12 +20,13 @@ export type TInvoice = {
   status: string;
   createdAt?: Date;
   updatedAt?: Date;
+  sendAt?: Date;
   deletedAt?: Date;
   client: TClient;
   business: TBusiness;
   InvoiceItem: [TInvoiceItem];
   paidAt: Date;
-  cancelledAt: Date;
+  cancelledAt?: Date;
   unpaidAt: Date;
   RecurringInvoice: [TRecurring];
   recurring_end: Date;
@@ -56,6 +57,7 @@ export type TRecurring = {
   due_date: Date;
   paidAt?: Date;
   createdAt: Date;
-  updatedAt: Date;
-  cancelledAt: Date;
+  updatedAt?: Date;
+  cancelledAt?: Date;
+  sendAt?: Date;
 };

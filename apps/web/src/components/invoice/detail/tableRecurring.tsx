@@ -17,17 +17,38 @@ import { MdNavigateBefore, MdNavigateNext } from 'react-icons/md';
 interface Props {
   invoice: TInvoice;
   invoiceId: any;
+  recurringId: string;
   setRecurringId: (newId: string) => void;
   recurring: TRecurring | null;
 }
 const RecurringTable: React.FC<Props> = ({
   invoice,
   invoiceId,
+  recurringId,
   setRecurringId,
   recurring,
 }) => {
   const updateRecurringId = (newId: string) => {
     setRecurringId(newId);
+    updateURL({ recurringId: newId });
+  };
+
+  const updateURL = (newParams: Record<string, any>) => {
+    const url = new URL(window.location.href);
+
+    Object.keys(newParams).forEach((key) => {
+      if (
+        newParams[key] !== undefined &&
+        newParams[key] !== null &&
+        newParams[key] !== ''
+      ) {
+        url.searchParams.set(key, newParams[key]);
+      } else {
+        url.searchParams.delete(key);
+      }
+    });
+
+    router.push(url.toString());
   };
 
   dayjs.extend(relativeTime);
@@ -203,7 +224,7 @@ const RecurringTable: React.FC<Props> = ({
                       <td className="px-4 py-2 text-center w-40 capitalize">
                         <div className="w-full flex justify-center">
                           <div
-                            className={` w-32 text-sm font-medium px-2 py-1 h-full rounded-full ${recurringData.status === 'cancelled' || recurringData.status === 'expired' ? 'border-gray-400 text-gray-500 bg-gray-100' : recurringData.status === 'paid' ? 'border-green-400 text-green-500 bg-green-100' : recurringData.status === 'unpaid' ? 'border-amber-400 text-amber-500 bg-amber-100' : 'border-blue-400 text-blue-500 bg-blue-100'}`}
+                            className={` w-32 text-sm font-medium px-2 py-1 h-full rounded-full border-2 ${recurringData.status === 'cancelled' || recurringData.status === 'expired' ? 'border-gray-400 text-gray-500 bg-gray-100' : recurringData.status === 'paid' ? 'border-green-400 text-green-500 bg-green-100' : recurringData.status === 'unpaid' ? 'border-amber-400 text-amber-500 bg-amber-100' : 'border-blue-400 text-blue-500 bg-blue-100'}`}
                           >
                             {recurringData.status}
                           </div>

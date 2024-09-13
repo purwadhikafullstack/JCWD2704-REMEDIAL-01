@@ -6,6 +6,7 @@ import {
   validateRefreshToken,
   validateToken,
 } from '@/middlewares/auth.middleware';
+import { isVerified } from '@/middlewares/verified.middleware';
 import { Router } from 'express';
 
 export class ProductRouter {
@@ -22,18 +23,26 @@ export class ProductRouter {
     this.router.post(
       '/c',
       validateToken,
+      isVerified,
       blobUploader().single('image'),
       this.productController.createProduct,
+    );
+    this.router.get(
+      '/inv/:productId',
+      validateToken,
+      this.productController.productInv,
     );
     this.router.patch(
       '/e/:productId',
       validateToken,
+      isVerified,
       blobUploader().single('image'),
       this.productController.updateProduct,
     );
     this.router.delete(
       '/d/:productId',
       validateToken,
+      isVerified,
       this.productController.deleteProduct,
     );
     this.router.get('/all', validateToken, this.productController.allProduct);

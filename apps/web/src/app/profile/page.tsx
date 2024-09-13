@@ -1,6 +1,5 @@
 import Navbar from '@/components/navbar';
-import UserBusiness from '@/components/profile/createBusiness';
-import UserProfile from '@/components/profile/editProfile';
+import UserProfile from '@/components/profile/profileDetail';
 import Sidebar from '@/components/sidebar';
 import React from 'react';
 import { ToastContainer } from 'react-toastify';
@@ -13,10 +12,9 @@ function page() {
         <div className="w-56">
           <Sidebar />
         </div>
-        <div className="w-full h-full ">
-          {/* <Navbar /> */}
+        <div className="w-full h-full max-w-screen-xl">
           <UserProfile />
-          <UserBusiness />
+          {/* <UserBusiness /> */}
         </div>
       </main>
       <ToastContainer />

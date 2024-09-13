@@ -5,6 +5,7 @@ import {
   validateRefreshToken,
   validateToken,
 } from '@/middlewares/auth.middleware';
+import { isVerified } from '@/middlewares/verified.middleware';
 import { Router } from 'express';
 
 export class BusinessRouter {
@@ -21,12 +22,14 @@ export class BusinessRouter {
     this.router.post(
       '/c',
       validateToken,
+      isVerified,
       blobUploader().single('logo'),
       this.businessController.createBusiness,
     );
     this.router.patch(
       '/e/:businessId',
       validateToken,
+      isVerified,
       blobUploader().single('logo'),
       this.businessController.updateBusiness,
     );

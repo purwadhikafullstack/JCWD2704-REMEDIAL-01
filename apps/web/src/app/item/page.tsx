@@ -1,7 +1,7 @@
 import ItemList from '@/components/item/showItem';
 import Navbar from '@/components/navbar';
-import UserBusiness from '@/components/profile/createBusiness';
-import UserProfile from '@/components/profile/editProfile';
+import UserBusiness from '@/components/profile/businessForm';
+import UserProfile from '@/components/profile/profileDetail';
 import Sidebar from '@/components/sidebar';
 import React from 'react';
 import { ToastContainer } from 'react-toastify';

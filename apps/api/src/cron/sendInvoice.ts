@@ -4,25 +4,27 @@ import fs from 'fs';
 import path from 'path';
 import handlebars from 'handlebars';
 import { transporter } from '@/libs/nodemiler';
+import { endOfDay, startOfDay } from 'date-fns';
+import { formatCurrency, formatDate } from '@/helpers/invoice';
 
 const sendInvoiceEmails = async () => {
-  const startOfDay = new Date(new Date().setUTCHours(0, 0, 0, 0)).toISOString();
-  const endOfDay = new Date(
-    new Date().setUTCHours(23, 59, 59, 999),
-  ).toISOString();
+  const now = new Date();
+  const startOfToday = startOfDay(now);
+  const endOfToday = endOfDay(now);
 
   const pendingInvoices = await prisma.invoice.findMany({
     where: {
       status: 'pending',
       invoice_date: {
-        gte: startOfDay,
-        lte: endOfDay,
+        gte: startOfToday,
+        lte: endOfToday,
       },
+      recurring: false,
     },
     include: {
       business: true,
       client: true,
-      RecurringInvoice: true,
+      // RecurringInvoice: true,
     },
   });
 
@@ -58,28 +60,64 @@ const sendInvoiceEmails = async () => {
     }
 
     const emailData = {
+      //business
       business_name: invoice.business.name,
       business_address: invoice.business.address,
       business_email: invoice.business.email,
       business_phone: invoice.business.phone,
+
+      //client
       client_name: invoice.client.name,
       client_address: invoice.client.address,
       client_email: invoice.client.email,
+      had_phone: invoice.client.phone ? invoice.client.phone : null,
       client_phone: invoice.client.phone,
+
+      //items
       items: invoiceItems.map((item) => ({
         quantity: item.quantity,
-        unit_price: item.price,
-        total: item.total_price,
+        price: formatCurrency(item.product.price),
+        total: formatCurrency(item.total_price),
         name: item.product.name,
+        description: item.product.description,
       })),
-      subtotal: subtotal,
-      discount: discountAmount,
-      tax_amount: taxAmount,
-      shipping_cost: invoice.shipping_cost,
-      total_amount_due: invoice.total_price,
+
+      //tax
+      tax: invoice.tax ? invoice.tax : null,
+      is_tax_percentage: invoice.tax_type === 'percentage' ? invoice.tax : null,
+      tax_rate: invoice.tax_type === 'percentage' ? invoice.tax : null,
+      tax_value: formatCurrency(taxAmount),
+      tax_amount: invoice.tax ? formatCurrency(invoice.tax) : null,
+
+      //discount
+      discount: invoice.discount ? invoice.discount : null,
+      is_discount_percentage:
+        invoice.discount_type === 'percentage' ? invoice.discount : null,
+      discount_rate:
+        invoice.discount_type === 'percentage' ? invoice.discount : null,
+      discount_value: formatCurrency(discountAmount),
+      discount_amount: invoice.discount
+        ? formatCurrency(invoice.discount)
+        : null,
+
+      //shipping
+      shipping_cost: invoice.shipping_cost
+        ? formatCurrency(invoice.shipping_cost)
+        : null,
+      total_amount_due: formatCurrency(invoice.total_price),
+      subtotal: formatCurrency(subtotal),
+
+      //payment
+      business_bank_account: invoice.business.bank_account,
+      business_bank: invoice.business.bank,
+
+      //invoice
+      invoice_no: invoice.no_invoice,
+      invoice_date: formatDate(invoice.invoice_date),
+      due_date: formatDate(invoice.due_date),
     };
 
-    const templatePath = path.join(__dirname, '../templates/invoice.html');
+    const templatePath = path.join(__dirname, '../templates/inv.html');
     const htmlTemplate = fs.readFileSync(templatePath, 'utf-8');
     const template = handlebars.compile(htmlTemplate);
     const htmlToSend = template(emailData);
@@ -94,26 +132,15 @@ const sendInvoiceEmails = async () => {
 
     await prisma.invoice.update({
       where: { id: invoice.id },
-      data: { status: 'unpaid' },
+      data: { status: 'unpaid', sendAt: new Date() },
     });
-
-    if (invoice.recurring && invoice.idNowRecurring) {
-      await prisma.recurringInvoice.update({
-        where: { id: invoice.idNowRecurring },
-        data: { status: 'unpaid' },
-      });
-    }
   }
 
   console.log(`Processed ${pendingInvoices.length} invoices for today.`);
 };
 
-// cron.schedule('0 0 * * *', async () => {
-//   console.log('Running daily invoice email cron job');
-//   await sendInvoiceEmails();
-// });
-cron.schedule('*/5 * * * *', async () => {
-  console.log('Running every 5 minutes invoice email cron job');
+cron.schedule('*/10 * * * *', async () => {
+  console.log('Running every 10 minutes invoice email cron job');
   await sendInvoiceEmails();
 });
 

@@ -4,10 +4,17 @@ import fs from 'fs';
 import handlebars from 'handlebars';
 import path from 'path';
 import { transporter } from '@/libs/nodemiler';
-import { generateInvoice } from '@/helpers/invoice';
+import { formatCurrency, formatDate, generateInvoice } from '@/helpers/invoice';
 import { CreateInvoiceInput } from '@/models/invoice.model';
 import { Value } from '@prisma/client';
-import { addDays } from 'date-fns';
+import {
+  addDays,
+  differenceInDays,
+  format,
+  isBefore,
+  startOfDay,
+} from 'date-fns';
+import puppeteer from 'puppeteer';
 
 class InvoiceService {
   async create(req: Request) {
@@ -35,18 +42,41 @@ class InvoiceService {
       !invoice_date ||
       payment_terms === null
     ) {
-      throw new Error('Missing required fields woy');
+      throw new Error('Missing required fields');
     }
 
     if (!Array.isArray(products) || products.length === 0) {
       throw new Error('Products must be a non-empty array');
     }
 
+    const today = startOfDay(new Date());
+    const invoiceDate = startOfDay(new Date(invoice_date));
+    const recurringEnd = startOfDay(new Date(recurring_end));
+
+    if (isBefore(invoiceDate, today)) {
+      throw new Error('Invoice date cannot be before today');
+    }
+
+    if (payment_terms < 0)
+      throw new Error('payment terms must be after invoice date');
+
     if (recurring) {
+      const daysDifference = differenceInDays(recurringEnd, invoiceDate);
+
       if (typeof recurring_interval !== 'number' || recurring_interval <= 0) {
         throw new Error('Recurring interval must be a positive number');
+      } else if (isBefore(recurringEnd, invoiceDate)) {
+        throw new Error('Recurring end date must be after the invoice date');
+      } else if (payment_terms > recurring_interval) {
+        throw new Error(
+          'Payment terms should be less than the repetition interval',
+        );
       } else if (!recurring_end) {
-        throw new Error('Reccuring end date must provided');
+        throw new Error('Recurring end date must be provided');
+      } else if (recurring_interval > daysDifference) {
+        throw new Error(
+          'Recurring interval cannot be greater than the difference between invoice date and recurring end date',
+        );
       }
     } else if (!recurring) {
       if (recurring_interval) {
@@ -133,20 +163,26 @@ class InvoiceService {
 
         let total_invoice_price = subtotal;
 
+        let discount_value = 0;
         if (discount && discount_type === 'nominal') {
+          discount_value = discount;
           total_invoice_price -= discount;
         } else if (discount && discount_type === 'percentage') {
-          total_invoice_price -= (total_invoice_price * discount) / 100;
+          discount_value = Math.round((total_invoice_price * discount) / 100);
+          total_invoice_price -= discount_value;
         }
 
         if (shipping_cost) {
           total_invoice_price += shipping_cost;
         }
 
+        let tax_value = 0;
         if (tax && tax_type === 'nominal') {
+          tax_value = tax;
           total_invoice_price += tax;
         } else if (tax && tax_type === 'percentage') {
-          total_invoice_price += (total_invoice_price * tax) / 100;
+          tax_value = Math.round((total_invoice_price * tax) / 100);
+          total_invoice_price += tax_value;
         }
 
         const start = new Date(invoice_date);
@@ -172,6 +208,12 @@ class InvoiceService {
             invoice_date: new Date(invoice_date),
             recurring_end: recurring_end ? new Date(recurring_end) : null,
           },
+          include: {
+            business: true,
+            InvoiceItem: true,
+            RecurringInvoice: true,
+            client: true,
+          },
         });
 
         const invoiceItemsToCreate = itemsData.map((item) => ({
@@ -185,21 +227,6 @@ class InvoiceService {
         await prisma.invoiceItem.createMany({
           data: invoiceItemsToCreate,
         });
-
-        const invoiceItems = await prisma.invoiceItem.findMany({
-          where: { invoice_id: createdInvoice.id },
-          include: { product: true },
-        });
-
-        const invoiceItemsData = invoiceItems.map((item) => ({
-          quantity: item.quantity,
-          price: item.product.price,
-          total: item.total_price,
-          name: item.product.name,
-        }));
-
-        const today = new Date().toISOString().split('T')[0];
-        const invoiceDate = new Date(invoice_date).toISOString().split('T')[0];
 
         const recurringInvoice = createdInvoice.recurring
           ? await prisma.recurringInvoice.create({
@@ -226,72 +253,168 @@ class InvoiceService {
           });
         }
 
-        if (invoiceDate === today) {
-          const emailData = {
-            business_name: business.name,
-            business_address: business.address,
-            business_email: business.email,
-            business_phone: business.phone,
-            client_name: client.name,
-            client_address: client.address,
-            client_email: client.email,
-            client_phone: client.phone,
-            items: invoiceItemsData,
-            subtotal: subtotal,
-            tax_amount: createdInvoice.tax ? createdInvoice.tax : null,
-            is_tax_percentage: createdInvoice.tax_type === 'percentage',
-            tax_rate:
-              createdInvoice.tax_type === 'percentage'
-                ? createdInvoice.tax
-                : null,
-            discount_amount: createdInvoice.discount
-              ? createdInvoice.discount
-              : null,
-            is_discount_percentage:
-              createdInvoice.discount_type === 'percentage',
-            discount:
-              createdInvoice.discount_type === 'percentage'
-                ? createdInvoice.discount
-                : null,
-            shipping_cost: createdInvoice.shipping_cost
-              ? createdInvoice.shipping_cost
-              : null,
-            total_amount_due: createdInvoice.total_price,
-          };
-
-          const templatePath = path.join(__dirname, '../templates/inv.html');
-          const htmlTemplate = fs.readFileSync(templatePath, 'utf-8');
-
-          const template = handlebars.compile(htmlTemplate);
-          const htmlToSend = template(emailData);
-
-          const sendEmail = await transporter.sendMail({
-            to: emailData.client_email,
-            subject: `Your Invoice from ${emailData.business_name}`,
-            html: htmlToSend,
-          });
-
-          const update = await prisma.invoice.update({
-            where: { id: createdInvoice.id },
-            data: { status: 'unpaid' },
-          });
-
-          if (recurringInvoice) {
-            await prisma.recurringInvoice.update({
-              where: { id: recurringInvoice.id },
-              data: { status: 'unpaid' },
-            });
-          }
-        }
-
-        return createdInvoice;
+        return {
+          createdInvoice,
+          subtotal,
+          discount_value,
+          tax_value,
+        };
       });
+
+      const invoiceItems = await prisma.invoiceItem.findMany({
+        where: { invoice_id: invoice.createdInvoice.id },
+        include: { product: true },
+      });
+
+      const invoiceItemsData = invoiceItems.map((item) => ({
+        quantity: item.quantity,
+        price: formatCurrency(item.product.price),
+        total: formatCurrency(item.total_price),
+        name: item.product.name,
+        description: item.product.description,
+      }));
+
+      let invNo = invoice.createdInvoice.no_invoice;
+      let invDate = invoice.createdInvoice.invoice_date;
+      let dueDate = invoice.createdInvoice.due_date;
+      if (
+        invoice.createdInvoice.recurring &&
+        invoice.createdInvoice.idNowRecurring
+      ) {
+        const recurring = await prisma.recurringInvoice.findUnique({
+          where: { id: invoice.createdInvoice.idNowRecurring },
+        });
+
+        if (recurring) {
+          invNo = recurring.no_invoice;
+          invDate = recurring.invoice_date;
+          dueDate = recurring.due_date;
+        }
+      }
+
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const invoiceDate = format(
+        new Date(invoice.createdInvoice.invoice_date),
+        'yyyy-MM-dd',
+      );
+      if (invoiceDate === today) {
+        const emailData = {
+          business_name: invoice.createdInvoice.business.name,
+          business_address: invoice.createdInvoice.business.address,
+          business_email: invoice.createdInvoice.business.email,
+          business_phone: invoice.createdInvoice.business.phone,
+          client_name: invoice.createdInvoice.client.name,
+          client_address: invoice.createdInvoice.client.address,
+          client_email: invoice.createdInvoice.client.email,
+          had_phone: invoice.createdInvoice.client.phone
+            ? invoice.createdInvoice.client.phone
+            : false,
+          client_phone: invoice.createdInvoice.client.phone,
+          items: invoiceItemsData,
+          subtotal: formatCurrency(invoice.subtotal),
+
+          //if tax
+          tax: invoice.createdInvoice.tax ? invoice.createdInvoice.tax : null,
+          is_tax_percentage: invoice.createdInvoice.tax_type === 'percentage',
+          tax_rate:
+            invoice.createdInvoice.tax_type === 'percentage'
+              ? invoice.createdInvoice.tax
+              : null,
+          tax_value: formatCurrency(invoice.tax_value),
+          tax_amount: invoice.createdInvoice.tax
+            ? formatCurrency(invoice.createdInvoice.tax)
+            : null,
+
+          //if disc
+          discount: invoice.createdInvoice.discount
+            ? invoice.createdInvoice.discount
+            : null,
+          is_discount_percentage:
+            invoice.createdInvoice.discount_type === 'percentage',
+          discount_rate:
+            invoice.createdInvoice.discount_type === 'percentage'
+              ? invoice.createdInvoice.discount
+              : null,
+          discount_value: formatCurrency(invoice.discount_value),
+          discount_amount: invoice.createdInvoice.discount
+            ? formatCurrency(invoice.createdInvoice.discount)
+            : null,
+
+          //if shipping
+          shipping_cost: invoice.createdInvoice.shipping_cost
+            ? formatCurrency(invoice.createdInvoice.shipping_cost)
+            : null,
+          total_amount_due: formatCurrency(invoice.createdInvoice.total_price),
+
+          //payment
+          business_bank_account: invoice.createdInvoice.business.bank_account,
+          business_bank: invoice.createdInvoice.business.bank,
+
+          //invoice
+          invoice_no: invNo,
+          invoice_date: formatDate(invDate),
+          due_date: formatDate(dueDate),
+        };
+
+        const templatePath = path.join(__dirname, '../templates/inv.html');
+        const htmlTemplate = fs.readFileSync(templatePath, 'utf-8');
+
+        const template = handlebars.compile(htmlTemplate);
+        const htmlToSend = template(emailData);
+
+        const pdfBuffer = await this.generatePdfFromHtml(htmlToSend);
+
+        const sendEmail = await transporter.sendMail({
+          to: emailData.client_email,
+          subject: `Your Invoice from ${emailData.business_name}`,
+          html: htmlToSend,
+          attachments: [
+            {
+              filename: `invoice-${invoice.createdInvoice.no_invoice}.pdf`,
+              content: pdfBuffer,
+              contentType: 'application/pdf',
+            },
+          ],
+        });
+
+        const update = await prisma.invoice.update({
+          where: { id: invoice.createdInvoice.id },
+          data: { status: 'unpaid', sendAt: new Date() },
+        });
+
+        if (
+          invoice.createdInvoice.recurring &&
+          invoice.createdInvoice.idNowRecurring
+        ) {
+          await prisma.recurringInvoice.update({
+            where: { id: invoice.createdInvoice.idNowRecurring },
+            data: { status: 'unpaid', sendAt: new Date() },
+          });
+        }
+      }
 
       return invoice;
     } catch (error) {
       console.error('Error creating invoice:', error);
       throw new Error('Failed to create invoice');
     }
+  }
+
+  async generatePdfFromHtml(html: string): Promise<Buffer> {
+    const browser = await puppeteer.launch({ headless: true });
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+
+    const pdfBufferUint8Array = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+    });
+
+    await browser.close();
+
+    const pdfBuffer = Buffer.from(pdfBufferUint8Array);
+
+    return pdfBuffer;
   }
 }
 

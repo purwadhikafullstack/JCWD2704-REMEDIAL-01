@@ -25,6 +25,20 @@ export class UserRouter {
       validateRefreshToken,
       this.userController.validateUser,
     );
+    this.router.post(
+      '/resendVerificationEmail',
+      this.userController.resendEmail,
+    );
+    this.router.post(
+      '/resendReverify',
+      validateToken,
+      this.userController.resendReverify,
+    );
+    this.router.get('/verification/:token', this.userController.sendVerif);
+    this.router.get(
+      '/verifyTokenUser/:token',
+      this.userController.verifyTokenUser,
+    );
     this.router.post('/forgotPassword', this.userController.forgotPassword);
     this.router.patch('/resetPassword', this.userController.resetPassword);
     this.router.patch(

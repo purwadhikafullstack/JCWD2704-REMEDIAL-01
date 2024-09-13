@@ -17,7 +17,7 @@ class DataInvService {
     } = req.query;
 
     const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 7;
+    const limit = parseInt(req.query.limit as string) || 5;
 
     let filtering: any = {};
 
@@ -58,12 +58,12 @@ class DataInvService {
       }
 
       if (start.getTime() === end.getTime()) {
-        filtering.createdAt = {
+        filtering.invoice_date = {
           gte: start,
           lte: end,
         };
       } else {
-        filtering.createdAt = {
+        filtering.invoice_date = {
           gte: start,
           lte: end,
         };
@@ -75,6 +75,8 @@ class DataInvService {
     let orderBy: any = {};
     if (sort === 'desc' || sort === 'asc') {
       orderBy.createdAt = sort === 'desc' ? 'desc' : 'asc';
+    } else if (sort === 'descStart' || sort === 'ascStart') {
+      orderBy.invoice_date = sort === 'descStart' ? 'desc' : 'asc';
     } else {
       orderBy.createdAt = 'desc';
     }
@@ -118,6 +120,8 @@ class DataInvService {
         recurring: true,
         recurring_interval: true,
         invoice_date: true,
+        recurring_end: true,
+        due_date: true,
       },
       orderBy: orderBy,
       skip: skip,

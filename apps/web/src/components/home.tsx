@@ -1,23 +1,27 @@
 'use client';
 
-import { axiosInstance } from '@/libs/axios';
-import { TProduct } from '@/models/product.model';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
-import { useDebounce } from 'use-debounce';
-import { BiSearch } from 'react-icons/bi';
-import { MdNavigateBefore, MdNavigateNext } from 'react-icons/md';
-import { formatPrice } from '@/helpers/format';
-import { FiEdit } from 'react-icons/fi';
-import Link from 'next/link';
 import Image from 'next/image';
-import { IoMdAdd } from 'react-icons/io';
-import { TInvoice } from '@/models/invoice.model';
 import { useAppSelector } from '@/app/hooks';
+import Loading from './loading';
 
 const Home = () => {
   const router = useRouter();
   const user = useAppSelector((state) => state.auth);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user?.user) {
+      setLoading(false);
+    } else {
+      router.push('/auth/login');
+    }
+  }, [user]);
+
+  if (loading) {
+    return <Loading />;
+  }
 
   return (
     <>

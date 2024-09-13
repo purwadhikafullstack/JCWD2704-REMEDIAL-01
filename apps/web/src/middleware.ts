@@ -29,6 +29,8 @@ export async function middleware(request: NextRequest) {
 
   const token = response.cookies.get('access_token')?.value;
   const decode = token ? (jwtDecode(token) as { user: TUser }) : undefined;
+  const isVerified = decode?.user?.is_verified ? true : false;
+  const hasBusiness = decode?.user?.business?.id ? true : false;
 
   if (
     !isLogin &&

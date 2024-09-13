@@ -59,4 +59,16 @@ export class ProductController {
       next(error);
     }
   }
+
+  async productInv(req: Request, res: Response, next: NextFunction) {
+    try {
+      const detail = await productService.productInv(req);
+      res.status(201).send({
+        message: 'fetch product invoice  ',
+        data: detail,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }

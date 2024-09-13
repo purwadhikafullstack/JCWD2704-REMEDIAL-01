@@ -206,11 +206,13 @@ const FormTerms: React.FC<ClientSelectorProps> = ({ formik }) => {
                 <option value="Net 30">Net 30</option>
                 <option value="Custom">Custom</option>
               </select>
-              {formik.touched.payment_terms && formik.errors.payment_terms && (
-                <div className="text-red-500 text-sm">
-                  {formik.errors.payment_terms}
-                </div>
-              )}
+              {formik.touched.payment_terms &&
+                formik.errors.payment_terms &&
+                localPaymentTerms !== 'Custom' && (
+                  <div className="text-red-500 text-sm">
+                    {formik.errors.payment_terms}
+                  </div>
+                )}
             </div>
           </div>
 
@@ -233,11 +235,13 @@ const FormTerms: React.FC<ClientSelectorProps> = ({ formik }) => {
                       : ''
                   }`}
                 />
-                {formik.touched.due_date && formik.errors.due_date && (
-                  <div className="text-red-500 text-sm">
-                    {formik.errors.due_date}
-                  </div>
-                )}
+                {formik.touched.payment_terms &&
+                  formik.errors.payment_terms &&
+                  localPaymentTerms == 'Custom' && (
+                    <div className="text-red-500 text-sm">
+                      {formik.errors.payment_terms}
+                    </div>
+                  )}
               </div>
             </div>
           )}
@@ -269,13 +273,14 @@ const FormTerms: React.FC<ClientSelectorProps> = ({ formik }) => {
                     <option value="custom">Custom</option>
                   </select>
                   {formik.touched.recurring_interval &&
-                    formik.errors.recurring_interval && (
+                    formik.errors.recurring_interval &&
+                    recurringInterval !== 'custom' && (
                       <div className="text-red-500 text-sm">
                         {formik.errors.recurring_interval}
                       </div>
                     )}
                   {recurringInterval === 'custom' && (
-                    <div className="flex items-start">
+                    <div className="">
                       <input
                         type="text"
                         id="custom_recurring_interval"
@@ -291,6 +296,13 @@ const FormTerms: React.FC<ClientSelectorProps> = ({ formik }) => {
                             : ''
                         }`}
                       />
+                      {formik.touched.recurring_interval &&
+                        formik.errors.recurring_interval &&
+                        recurringInterval === 'custom' && (
+                          <div className="text-red-500 text-sm">
+                            {formik.errors.recurring_interval}
+                          </div>
+                        )}
                     </div>
                   )}
                 </div>

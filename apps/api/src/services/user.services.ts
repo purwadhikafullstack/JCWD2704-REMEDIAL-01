@@ -5,6 +5,7 @@ import { transporter } from '@/libs/nodemiler';
 import { TUser } from '@/models/user.model';
 import prisma from '@/prisma';
 import { Prisma } from '@prisma/client';
+import { addHours, addMinutes } from 'date-fns';
 import { Request } from 'express';
 import fs from 'fs';
 import { verify } from 'jsonwebtoken';
@@ -15,35 +16,57 @@ class UserService {
   async signUp(req: Request) {
     const { email } = req.body;
 
-    const existingUser = await prisma.user.findUnique({
-      where: { email: email },
-    });
+    try {
+      const result = await prisma.$transaction(async (prisma) => {
+        const existingUser = await prisma.user.findUnique({
+          where: { email: email },
+        });
 
-    if (existingUser) throw new Error('email has been registered');
+        if (existingUser) throw new Error('email has been registered');
 
-    const createUser = await prisma.user.create({
-      data: {
-        email,
-        is_verified: false,
-      },
-    });
+        const createUser = await prisma.user.create({
+          data: {
+            email,
+            is_verified: false,
+          },
+        });
 
-    const verifyToken = createToken({ id: createUser.id }, '20m');
-    const verifyUrl = `${'http://localhost:3000'}/verify/${verifyToken}`;
+        const verifyToken = createToken({ id: createUser.id }, '20m');
+        const tokenExp = addMinutes(new Date(), 20);
 
-    const templatePath = path.join(__dirname, '../templates/verification.html');
-    const htmlTemplate = fs.readFileSync(templatePath, 'utf-8');
+        await prisma.user.update({
+          where: { id: createUser.id },
+          data: {
+            token: verifyToken,
+            tokenExp: tokenExp,
+          },
+        });
 
-    const userEmail = createUser.email;
-    const html = htmlTemplate.replace('{{verification_link}}', verifyUrl);
+        const verifyUrl = `${'http://localhost:3000'}/verify/${verifyToken}`;
 
-    const sendEmail = await transporter.sendMail({
-      to: userEmail,
-      subject: 'Confirm Your Email Address For Invozy',
-      html,
-    });
+        const templatePath = path.join(
+          __dirname,
+          '../templates/verification.html',
+        );
+        const htmlTemplate = fs.readFileSync(templatePath, 'utf-8');
 
-    return createUser;
+        const userEmail = createUser.email;
+        const html = htmlTemplate.replace('{{verification_link}}', verifyUrl);
+
+        const sendEmail = await transporter.sendMail({
+          to: userEmail,
+          subject: 'Confirm Your Email Address For Invozy',
+          html,
+        });
+
+        return createUser;
+      });
+
+      return result;
+    } catch (error) {
+      console.error('Error during sign up:', error);
+      throw new Error('Sign up failed');
+    }
   }
 
   async finalizeSignUp(req: Request) {
@@ -75,6 +98,8 @@ class UserService {
         last_name,
         password: hashPass,
         is_verified: true,
+        token: null,
+        tokenExp: null,
       },
     });
 
@@ -132,6 +157,7 @@ class UserService {
       where: {
         id: userId,
       },
+      include: { Business: true },
     });
 
     if (!user) throw new Error('user not found');
@@ -146,6 +172,7 @@ class UserService {
           is_verified: user.is_verified,
           reqEmailChange: user.reqEmailChange,
         },
+        business: { id: user.Business?.id, name: user.Business?.name },
         type: 'access_token',
       },
       '1hr',
@@ -169,6 +196,7 @@ class UserService {
     }
 
     const verifyToken = createToken({ id: user.id }, '20m');
+    const tokenExp = addMinutes(new Date(), 20);
     const resetUrl = `${'http://localhost:3000'}/forgot-password/${verifyToken}`;
 
     const templatePath = path.join(
@@ -188,6 +216,11 @@ class UserService {
       to: userEmail,
       subject: 'We’ve Received Your Invozy Password Reset Request',
       html,
+    });
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { token: verifyToken, tokenExp: tokenExp },
     });
 
     return sendEmail;
@@ -219,6 +252,8 @@ class UserService {
       where: { id: userId },
       data: {
         password: hashPass,
+        token: null,
+        tokenExp: null,
       },
     });
 
@@ -231,7 +266,7 @@ class UserService {
       throw new Error('User ID not found in request');
     }
 
-    const { email, first_name, last_name, password } = req.body;
+    const { email, first_name, last_name, password, deleteImg } = req.body;
     const file = req.file;
 
     try {
@@ -246,11 +281,20 @@ class UserService {
       const updatedData: Prisma.UserUpdateInput = {};
 
       if (email && email !== user.email) {
-        const verifyToken = createToken({ id: userId }, '1h');
+        const checkEmail = await prisma.user.findFirst({
+          where: { email: email },
+        });
+
+        if (checkEmail) throw new Error('email already used');
+
+        const verifyToken = createToken({ id: userId }, '20m');
+        const tokenExp = addMinutes(new Date(), 20);
 
         updatedData.email = email;
         updatedData.is_verified = false;
         updatedData.reqEmailChange = true;
+        updatedData.token = verifyToken;
+        updatedData.tokenExp = tokenExp;
 
         const verifyUrl = `${'http://localhost:3000'}/reverify/${verifyToken}`;
 
@@ -274,6 +318,15 @@ class UserService {
         });
       }
 
+      if (deleteImg) {
+        updatedData.image = null;
+      } else {
+        if (file) {
+          const buffer = await sharp(file.buffer).png().toBuffer();
+          updatedData.image = buffer;
+        }
+      }
+
       if (first_name !== undefined) {
         updatedData.first_name = first_name;
       }
@@ -284,11 +337,6 @@ class UserService {
 
       if (password) {
         updatedData.password = await hashPassword(password);
-      }
-
-      if (file) {
-        const buffer = await sharp(file.buffer).png().toBuffer();
-        updatedData.image = buffer;
       }
 
       const updatedUser = await prisma.user.update({
@@ -330,7 +378,9 @@ class UserService {
     }
 
     try {
-      const decodedToken = verify(token, SECRET_KEY) as { id: string };
+      const decodedToken = verify(token, SECRET_KEY) as {
+        id: string;
+      };
 
       if (!decodedToken || !decodedToken.id) {
         throw new Error('Invalid token');
@@ -347,7 +397,19 @@ class UserService {
       }
 
       if (!user.reqEmailChange) {
-        throw new Error('Invalid or expired token');
+        throw new Error('User not request change email');
+      }
+
+      if (user.is_verified) {
+        throw new Error('User already verified');
+      }
+
+      if (
+        user.token !== token ||
+        !user.tokenExp ||
+        new Date() > new Date(user.tokenExp)
+      ) {
+        throw new Error('Token is invalid or has expired');
       }
 
       const updatedUser = await prisma.user.update({
@@ -355,6 +417,8 @@ class UserService {
         data: {
           is_verified: true,
           reqEmailChange: false,
+          token: null,
+          tokenExp: null,
         },
       });
 
@@ -380,6 +444,234 @@ class UserService {
     } catch (error) {
       console.error('Error in reverifyEmail:', error);
       throw new Error('Internal server error');
+    }
+  }
+
+  async resendVerification(
+    req: Request,
+  ): Promise<{ email?: string; message: string }> {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return { message: 'Email is required' };
+      }
+
+      const select: Prisma.UserSelectScalar = {
+        id: true,
+        is_verified: true,
+      };
+
+      const data = await prisma.user.findUnique({
+        select,
+        where: { email: email },
+      });
+
+      if (!data) {
+        return { message: 'User not found' };
+      }
+
+      if (data.is_verified) {
+        return { message: 'You have previously verified your email' };
+      }
+
+      const verifyToken = createToken({ id: data.id }, '20m');
+      const tokenExp = addMinutes(new Date(), 20);
+
+      await prisma.user.update({
+        where: { id: data.id },
+        data: {
+          token: verifyToken,
+          tokenExp: tokenExp,
+        },
+      });
+
+      const verifyUrl = `${'http://localhost:3000'}/verify/${verifyToken}`;
+      const templatePath = path.join(
+        __dirname,
+        '../templates/verification.html',
+      );
+      const htmlTemplate = fs.readFileSync(templatePath, 'utf-8');
+      const html = htmlTemplate.replace('{{verification_link}}', verifyUrl);
+
+      await transporter.sendMail({
+        to: email,
+        subject: 'Confirm Your Email Address For Invozy',
+        html,
+      });
+
+      return { email, message: 'Verification email sent' };
+    } catch (error) {
+      console.error('Error resend email', error);
+      return { message: 'Internal server error' };
+    }
+  }
+
+  async sendVerification(req: Request) {
+    const { token } = req.params;
+
+    if (!token) {
+      console.error('Token is missing');
+      throw new Error('Token is missing');
+    }
+
+    try {
+      console.log('Received token:', token);
+
+      const decodedToken = verify(token, process.env.SECRET_KEY as string) as {
+        id: string;
+      };
+
+      console.log('Decoded token:', decodedToken);
+
+      if (!decodedToken || !decodedToken.id) {
+        console.error('Invalid token');
+        return { is_verified: false, message: 'Invalid token', user: null };
+      }
+
+      const existingUser = await prisma.user.findUnique({
+        where: { id: decodedToken.id },
+      });
+
+      console.log('Existing user:', existingUser);
+
+      if (!existingUser) {
+        console.error('User not found');
+        return { is_verified: false, message: 'User not found', user: null };
+      }
+
+      if (
+        existingUser.tokenExp &&
+        new Date() > new Date(existingUser.tokenExp)
+      ) {
+        console.error('Token has expired');
+        return { is_verified: false, message: 'Token has expired', user: null };
+      }
+
+      if (existingUser.token !== token) {
+        console.error('Invalid token');
+        return { is_verified: false, message: 'Invalid token', user: null };
+      }
+
+      if (existingUser.is_verified) {
+        console.error('User already verified');
+        return {
+          is_verified: true,
+          message: 'User already verified',
+          user: existingUser,
+        };
+      }
+
+      console.log('Token verification successful');
+      return {
+        is_verified: false,
+        message: 'Token is valid but user not yet verified',
+        user: existingUser,
+      };
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error('Error during verification:', error.message);
+      } else {
+        console.error('Unknown error:', error);
+      }
+      return {
+        is_verified: false,
+        message: 'Error during verification',
+        user: null,
+      };
+    }
+  }
+
+  async verifyTokenUser(req: Request) {
+    const { token } = req.params;
+    const decodedToken = verify(token, SECRET_KEY) as { id: string };
+
+    if (!decodedToken || !decodedToken.id) {
+      throw new Error('Invalid token');
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: decodedToken.id },
+      select: {
+        id: true,
+        token: true,
+        tokenExp: true,
+      },
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    if (
+      user.token !== token ||
+      !user.tokenExp ||
+      new Date() > new Date(user.tokenExp)
+    ) {
+      throw new Error('Token is invalid or has expired');
+    }
+
+    return user;
+  }
+
+  async resendReverify(req: Request) {
+    try {
+      const userId = req.user.id;
+      if (!userId) {
+        return { message: 'Email is required' };
+      }
+
+      const data = await prisma.user.findUnique({
+        where: { id: userId, reqEmailChange: true },
+        select: { id: true, email: true, is_verified: true, first_name: true },
+      });
+
+      if (!data) {
+        return { message: 'User not found' };
+      }
+
+      if (data.is_verified) {
+        return { message: 'You have previously verified your email' };
+      }
+
+      const email = data.email;
+
+      const verifyToken = createToken({ id: data.id }, '20m');
+      const tokenExp = addMinutes(new Date(), 20);
+
+      await prisma.user.update({
+        where: { id: data.id },
+        data: {
+          token: verifyToken,
+          tokenExp: tokenExp,
+        },
+      });
+
+      const verifyUrl = `${'http://localhost:3000'}/reverify/${verifyToken}`;
+
+      const templatePath = path.join(
+        __dirname,
+        '../templates/changeEmail.html',
+      );
+
+      const htmlTemplate = fs.readFileSync(templatePath, 'utf-8');
+
+      const userName = data.first_name || '';
+
+      const html = htmlTemplate
+        .replace('{{verification_link}}', verifyUrl)
+        .replace('{{user_name}}', userName);
+
+      const sendEmail = await transporter.sendMail({
+        to: email,
+        subject: 'Please verify your new email address for Invozy',
+        html,
+      });
+
+      return { email, message: 'Verification email sent' };
+    } catch (error) {
+      console.error('Error resend email', error);
+      return { message: 'Internal server error' };
     }
   }
 

@@ -10,8 +10,9 @@
         background-color: #f4f4f4;
         margin: 0;
         padding: 0;
+        --tw-text-opacity: 1;
+        color: black;
       }
-
       .email-container {
         max-width: 800px;
         margin: 40px auto;
@@ -19,156 +20,326 @@
         padding: 20px;
         border-radius: 10px;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      }
-
-      .header {
-        text-align: center;
-        padding-bottom: 20px;
-        border-bottom: 1px solid #dddddd;
-      }
-
-      .header h1 {
-        color: #333333;
-        font-size: 24px;
-      }
-
-      .business-info,
-      .client-info {
-        margin-bottom: 20px;
-      }
-
-      .business-info h2,
-      .client-info h2 {
-        font-size: 18px;
-        color: #333333;
-        margin-bottom: 10px;
-      }
-
-      .business-info p,
-      .client-info p {
-        font-size: 16px;
-        color: #666666;
-        margin: 0;
-      }
-
-      .invoice-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 20px;
-      }
-
-      .invoice-table th,
-      .invoice-table td {
-        padding: 12px;
-        border: 1px solid #dddddd;
-        text-align: left;
-        font-size: 16px;
-        color: #333333;
-      }
-
-      .invoice-table th {
-        background-color: #f2c675;
-        color: #ffffff;
-      }
-
-      .totals {
-        margin-top: 20px;
-        text-align: right;
-      }
-
-      .totals p {
-        font-size: 16px;
-        color: #333333;
-        margin: 5px 0;
-      }
-
-      .footer {
-        text-align: center;
-        padding-top: 20px;
-        border-top: 1px solid #dddddd;
-        margin-top: 40px;
-      }
-
-      .footer p {
-        font-size: 14px;
-        color: #aaaaaa;
-        margin: 0;
+        color: black;
       }
     </style>
   </head>
-
   <body>
     <div class="email-container">
-      <div class="header">
-        <h1>Your Invoice from {{business_name}}</h1>
+      <!-- Start Contains -->
+      <!-- <div style="display: flex; flex-direction: column; gap: 2.5rem"> -->
+      <!-- Header -->
+      <div
+        style="
+          width: 100%;
+          display: flex;
+          justify-content: space-between;
+          padding-bottom: 2rem;
+        "
+      >
+        <div style="gap: 0.5rem; background-color: #fef3c7">
+          <!-- INV -->
+          <div
+            style="
+              padding-left: 1.25rem;
+              padding-right: 1.25rem;
+              padding-top: 3.5rem;
+              padding-bottom: 0.5rem;
+            "
+          >
+            <div
+              style="
+                font-size: 3rem;
+                line-height: 1;
+                font-weight: 700;
+                text-align: center;
+              "
+            >
+              INVOICE
+            </div>
+          </div>
+          <!-- Client -->
+          <div
+            style="
+              width: 15rem;
+              background-color: #fffbeb;
+              padding: 1.25rem;
+              gap: 0.5rem;
+            "
+          >
+            <div style="font-weight: 700">To:</div>
+            <div style="font-weight: 700">{{client_name}}</div>
+            <div style="font-size: 0.875rem; line-height: 1.25rem">
+              {{client_address}}
+            </div>
+            <div
+              style="
+                font-size: 0.875rem;
+                line-height: 1.25rem;
+                font-weight: 700;
+              "
+            >
+              {{#if had_phone}}{{client_phone}}{{else}}{{client_email}}{{/if}}
+            </div>
+          </div>
+        </div>
+        <!-- Business -->
+        <div
+          style="
+            padding-top: 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            margin-left: auto;
+          "
+        >
+          <div
+            style="
+              width: 2rem;
+              height: 2rem;
+              background-color: #fef3c7;
+              margin-right: 1.25rem;
+            "
+          ></div>
+          <div style="gap: 0.5rem">
+            <div
+              className="    
+              width: 15rem"
+            >
+              <div
+                style="font-size: 1.5rem; line-height: 2rem; font-weight: 700"
+              >
+                {{business_name}}
+              </div>
+            </div>
+            <div style="width: 15rem; gap: 0.5rem">
+              <div style="font-weight: 700">Business Address</div>
+              <div style="font-size: 0.875rem; line-height: 1.25rem">
+                {{business_address}}
+              </div>
+              <div style="font-size: 0.875rem; font-weight: 700">
+                {{business_phone}}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Main -->
+      <div style="padding-bottom: 1.25rem; width: 100%">
+        <!-- invoice data -->
+        <div style="width: 100%; display: flex; padding-bottom: 1rem">
+          <strong>INVOICE NO #{{invoice_no}}</strong>
+          <strong style="margin-left: auto; text-align: right"
+            >INVOICE DATE: {{invoice_date}}</strong
+          >
+        </div>
+
+        <!-- Table -->
+        <table
+          style="
+            width: 100%;
+            border-radius: 0.75rem;
+            border-collapse: collapse;
+            border: 1px solid rgb(231, 231, 231);
+          "
+        >
+          <thead>
+            <tr style="background-color: #fde68a">
+              <th style="text-align: left; padding: 0.75rem; width: 15rem">
+                Item Details
+              </th>
+              <th style="padding: 0.75rem; text-align: center">Quantity</th>
+              <th style="padding: 0.75rem; text-align: center">Price</th>
+              <th style="padding: 0.75rem; text-align: center">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each items}}
+            <tr
+              style="
+                font-size: 0.875rem;
+                line-height: 1.25rem;
+                background-color: #ffffff;
+                border-collapse: collapse;
+                border: 1px solid rgb(231, 231, 231);
+              "
+            >
+              <td
+                style="
+                  text-align: left;
+                  padding: 0.75rem;
+                  width: 20rem;
+                  text-wrap: wrap;
+                "
+              >
+                <div style="font-weight: 600">{{name}}</div>
+                <div style="text-wrap: wrap">{{description}}</div>
+              </td>
+              <td
+                style="text-align: center; padding: 0.75rem; padding: 0.75rem"
+              >
+                {{quantity}}
+              </td>
+              <td
+                style="text-align: center; padding: 0.75rem; padding: 0.75rem"
+              >
+                {{price}}
+              </td>
+              <td
+                style="text-align: center; padding: 0.75rem; padding: 0.75rem"
+              >
+                {{total}}
+              </td>
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
+
+        <!-- Price -->
+        <div
+          style="
+            background-color: #fffbeb;
+            padding: 1.25rem;
+            width: 20rem;
+            gap: 5px;
+            margin-top: 1rem;
+            margin-left: auto;
+          "
+        >
+          <div
+            style="
+              align-items: center;
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              padding-bottom: 0.25rem;
+            "
+          >
+            <div>Subtotal</div>
+            <div style="margin-left: auto">{{subtotal}}</div>
+          </div>
+          {{#if discount}}
+          <div
+            style="
+              align-items: center;
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              padding-bottom: 0.25rem;
+            "
+          >
+            <div>
+              Discount {{#if is_discount_percentage}} ({{discount_rate}}%)
+              {{/if}}
+            </div>
+            <div style="margin-left: auto">
+              {{#if is_discount_percentage}} - {{discount_value}} {{else}} -
+              {{discount_amount}} {{/if}}
+            </div>
+          </div>
+          {{/if}} {{#if shipping_cost}}
+          <div
+            style="
+              align-items: center;
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              padding-bottom: 0.25rem;
+            "
+          >
+            <div>Shipping Cost</div>
+            <div style="margin-left: auto">+ {{shipping_cost}}</div>
+          </div>
+          {{/if}} {{#if tax}}
+          <div
+            style="
+              align-items: center;
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              padding-bottom: 0.25rem;
+            "
+          >
+            <div>Tax {{#if is_tax_percentage}} ({{tax_rate}}%) {{/if}}</div>
+            <div style="margin-left: auto">
+              {{#if is_tax_percentage}} + {{tax_value}} {{else}} +
+              {{tax_amount}} {{/if}}
+            </div>
+          </div>
+          {{/if}}
+          <hr style="margin-bottom: 0.5rem" />
+          <div
+            style="
+              font-weight: 700;
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              width: 100%;
+            "
+          >
+            <div>Total Due</div>
+            <div style="margin-left: auto">{{total_amount_due}}</div>
+          </div>
+        </div>
       </div>
 
-      <div class="business-info">
-        <h2>Business Information</h2>
-        <p><strong>{{business_name}}</strong></p>
-        <p>{{business_address}}</p>
-        <p>Email: {{business_email}}</p>
-        <p>Phone: {{business_phone}}</p>
+      <!-- Payment -->
+      <div style="width: 15rem; padding-bottom: 1.25rem">
+        <div style="font-weight: 700; padding-bottom: 0.25rem">
+          Payment Info
+        </div>
+        <div
+          style="
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+            display: flex;
+            align-items: center;
+          "
+        >
+          <div style="width: 6rem">Bank Details:</div>
+          <div>{{business_bank}}</div>
+        </div>
+        <div
+          style="
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+            display: flex;
+            align-items: center;
+          "
+        >
+          <div style="width: 6rem">Account:</div>
+          <div>{{business_bank_account}}</div>
+        </div>
       </div>
 
-      <div class="client-info">
-        <h2>Billing Information</h2>
-        <p><strong>{{client_name}}</strong></p>
-        <p>{{client_address}}</p>
-        <p>Email: {{client_email}}</p>
-        <p>Phone: {{client_phone}}</p>
+      <!-- Terms -->
+      <div>
+        <div style="font-weight: 700; padding-bottom: 0.25rem">
+          Terms & Condition
+        </div>
+        <div style="font-size: 0.875rem; line-height: 1.25rem">
+          This invoice is due on
+          <strong>{{due_date}}</strong>, Please pay before the due date.
+        </div>
       </div>
 
-      <table class="invoice-table">
-        <thead>
-          <tr>
-            <th>Item Name</th>
-            <th>Quantity</th>
-            <th>Unit Price</th>
-            <th>Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {{#each items}}
-          <tr>
-            <td>{{name}}</td>
-            <td>{{quantity}}</td>
-            <td>{{price}}</td>
-            <td>{{total}}</td>
-          </tr>
-          {{/each}}
-        </tbody>
-      </table>
-
-      <div class="totals">
-        <p><strong>Subtotal:</strong> {{subtotal}}</p>
-
-        {{#if tax_amount}}
-        <p>
-          <strong>Tax:</strong>
-          {{#if is_tax_percentage}} {{tax_rate}}% ({{tax_amount}}) {{else}}
-          {{tax_amount}} {{/if}}
-        </p>
-        {{/if}} {{#if discount}}
-        <p>
-          <strong>Discount:</strong>
-          {{#if is_discount_percentage}} {{discount}}% ({{discount_amount}})
-          {{else}} {{discount}} {{/if}}
-        </p>
-        {{/if}} {{#if shipping_cost}}
-        <p><strong>Shipping:</strong> {{shipping_cost}}</p>
-        {{/if}}
-
-        <p>
-          <strong>Total Amount Due:</strong>
-          <strong>{{total_amount_due}}</strong>
-        </p>
+      <!-- Footer -->
+      <div
+        style="
+          font-size: 0.875rem;
+          line-height: 1.25rem;
+          --tw-text-opacity: 1;
+          color: gray;
+          border-top-width: 1px;
+          padding-top: 3rem;
+          width: 100%;
+        "
+      >
+        <div style="text-align: center">Thank you for your business!</div>
+        <div style="text-align: center">
+          &copy; 2024 Toko Sumber Jaya. All rights reserved.
+        </div>
       </div>
-
-      <div class="footer">
-        <p>Thank you for your business!</p>
-        <p>&copy; 2024 {{business_name}}. All rights reserved.</p>
-      </div>
+      <!-- </div> -->
     </div>
   </body>
 </html>

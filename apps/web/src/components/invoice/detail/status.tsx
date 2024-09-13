@@ -30,9 +30,7 @@ const Status: React.FC<Props> = ({ invoice, recurring }) => {
               {recurring?.status === 'unpaid' && (
                 <div className="flex items-center gap-2">
                   <div className="font-medium">Send at:</div>
-                  {dayjs(recurring?.invoice_date).format(
-                    'DD MMMM YYYY - HH:mm:ss',
-                  )}
+                  {dayjs(recurring?.sendAt).format('DD MMMM YYYY - HH:mm:ss')}
                 </div>
               )}
             </>
@@ -41,9 +39,7 @@ const Status: React.FC<Props> = ({ invoice, recurring }) => {
               {invoice.status === 'unpaid' && (
                 <div className="flex items-center gap-2">
                   <div className="font-medium">Send at:</div>
-                  {dayjs(invoice?.invoice_date).format(
-                    'DD MMMM YYYY - HH:mm:ss',
-                  )}
+                  {dayjs(invoice?.sendAt).format('DD MMMM YYYY - HH:mm:ss')}
                 </div>
               )}
             </>
@@ -95,8 +91,8 @@ const Status: React.FC<Props> = ({ invoice, recurring }) => {
             <>
               {recurring?.status === 'expired' && (
                 <div className="flex items-center gap-2">
-                  <div className="font-medium">Send at:</div>
-                  {dayjs(recurring?.due_date).format('DD MMMM YYYY - HH:mm:ss')}
+                  <div className="font-medium">Expired at:</div>
+                  {dayjs(recurring?.due_date).format('DD MMMM YYYY')}
                 </div>
               )}
             </>
@@ -104,8 +100,8 @@ const Status: React.FC<Props> = ({ invoice, recurring }) => {
             <>
               {invoice.status === 'expired' && (
                 <div className="flex items-center gap-2">
-                  <div className="font-medium">Send at:</div>
-                  {dayjs(invoice?.due_date).format('DD MMMM YYYY - HH:mm:ss')}
+                  <div className="font-medium">Expired at:</div>
+                  {dayjs(invoice?.due_date).format('DD MMMM YYYY')}
                 </div>
               )}
             </>

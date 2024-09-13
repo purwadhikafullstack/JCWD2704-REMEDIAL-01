@@ -22,16 +22,16 @@ const Reverify: FC = () => {
     const verifyToken = async () => {
       try {
         const response = await axiosInstance().get(
-          `/api/users/verifyTokenUser/${token}`,
+          `/users/verifyTokenUser/${token}`,
         );
 
-        const { isVerified, message, user } = response.data;
+        const { is_verified, message, user } = response.data;
 
         if (user === null) {
           router.push('/');
-        } else if (isVerified === false) {
+        } else if (is_verified === false) {
           setIsVerified(false);
-        } else if (isVerified === true) {
+        } else if (is_verified === true) {
           toast.success(
             'Your account is already verified. Redirecting to home page...',
           );
@@ -76,8 +76,8 @@ const Reverify: FC = () => {
 
   return (
     <>
-      <div className="flex items-center justify-center h-screen flex-col">
-        <div className="text-center p-4">
+      <div className="flex items-center justify-center h-screen flex-col bg-amber-50">
+        <div className="text-center p-10 rounded-xl shadow-md border border-gray-200 bg-white">
           <div className="w-full">
             <div className="flex flex-col items-center justify-center h-full w-full">
               <div className="animate-spin w-16 h-16 border-4 border-t-transparent border-amber-300 rounded-full"></div>

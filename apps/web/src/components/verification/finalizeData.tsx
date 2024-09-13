@@ -23,6 +23,40 @@ const FinalizeData = () => {
   const params = useParams();
   const { token } = params;
 
+  useEffect(() => {
+    if (!token) {
+      router.push('/auth/login');
+      return;
+    }
+
+    const verifyToken = async () => {
+      try {
+        const response = await axiosInstance().get(
+          `/users/verification/${token}`,
+        );
+
+        const { is_verified: verified, message, user } = response.data;
+
+        if (user === null) {
+          router.push('/');
+        } else if (verified === false) {
+          setIsVerified(false);
+          console.log('Token is valid but user is not verified:', message);
+        } else if (verified === true) {
+          toast.success(
+            'Your account is already verified. Redirecting to home page...',
+          );
+          setTimeout(() => router.push('/'), 2000);
+        }
+      } catch (error) {
+        console.error('Verification error:', error);
+        router.push('/');
+      }
+    };
+
+    verifyToken();
+  }, [token]);
+
   YupPassword(Yup);
 
   const initialValues = {

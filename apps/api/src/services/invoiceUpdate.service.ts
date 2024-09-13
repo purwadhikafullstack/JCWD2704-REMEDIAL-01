@@ -91,7 +91,7 @@ class InvoiceUpdateService {
 
     if (!invoice) throw new Error('Invoice not found');
 
-    if (invoice.status === 'unpaid') {
+    if (invoice.status === 'pending' || invoice.status === 'unpaid') {
       const canceledInvoice = await prisma.invoice.update({
         where: { id: invoice.id },
         data: { status: 'cancelled', cancelledAt: new Date() },
@@ -158,7 +158,7 @@ class InvoiceUpdateService {
 
     if (!invoice) throw new Error('invoice not found');
 
-    if (invoice.status === 'pending') {
+    if (invoice.status === 'pending' && !invoice.recurring) {
       const softDelete = await prisma.invoice.update({
         where: { id: invoice.id },
         data: {

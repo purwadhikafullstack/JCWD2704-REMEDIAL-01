@@ -1,11 +1,7 @@
 'use client';
-import { ChangeEvent, useEffect, useState } from 'react';
-import dayjs from 'dayjs';
-import { IoMdAdd, IoMdClose } from 'react-icons/io';
+import { useEffect, useState } from 'react';
 import { Product } from '@/models/product.model';
 import { formatPrice, inputRupiah } from '@/helpers/format';
-import { axiosInstance } from '@/libs/axios';
-import { useDebounce } from 'use-debounce';
 
 interface ProductListProps {
   formik: any;
@@ -23,21 +19,54 @@ const FormTotal: React.FC<ProductListProps> = ({
   const [formattedDisc, setFormattedDisc] = useState('');
   const [subtotal, setSubtotal] = useState(0);
   const [totalPayment, setTotalPayment] = useState(0);
+  const [taxAmount, setTaxAmount] = useState(0);
+  const [discountAmount, setDiscountAmount] = useState(0);
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     const numericValue = value.replace(/\D/g, '');
-    const cost = numericValue ? parseFloat(numericValue) : '';
+    let cost = numericValue ? parseFloat(numericValue) : 0;
     const formattedValue = numericValue ? inputRupiah(numericValue) : '';
+
+    if (cost === 0) {
+      if (id === 'shipping_cost') {
+        setFormattedPrice('');
+        formik.setFieldValue('shipping_cost', '');
+      } else if (id === 'discount') {
+        setFormattedDisc('');
+        formik.setFieldValue('discount', '');
+      } else if (id === 'tax') {
+        setFormattedTax('');
+        formik.setFieldValue('tax', '');
+      }
+      return;
+    }
+
     if (id === 'shipping_cost') {
       setFormattedPrice(formattedValue);
       formik.setFieldValue('shipping_cost', cost);
     } else if (id === 'discount') {
-      setFormattedDisc(formattedValue);
-      formik.setFieldValue('discount', cost);
+      if (formik.values.discount_type === 'percentage') {
+        const percentageValue = Math.min(100, cost);
+        setFormattedDisc(percentageValue.toString());
+        formik.setFieldValue('discount', percentageValue);
+      } else {
+        if (cost > subtotal) {
+          cost = subtotal;
+        }
+        const formattedDiscount = inputRupiah(cost.toString());
+        setFormattedDisc(formattedDiscount);
+        formik.setFieldValue('discount', cost);
+      }
     } else if (id === 'tax') {
-      setFormattedTax(formattedValue);
-      formik.setFieldValue('tax', cost);
+      if (formik.values.tax_type === 'percentage') {
+        const percentageValue = Math.min(100, cost);
+        setFormattedTax(percentageValue.toString());
+        formik.setFieldValue('tax', percentageValue);
+      } else {
+        setFormattedTax(formattedValue);
+        formik.setFieldValue('tax', cost);
+      }
     }
   };
 
@@ -50,6 +79,7 @@ const FormTotal: React.FC<ProductListProps> = ({
       return total + price * product.quantity;
     }, 0);
   };
+
   useEffect(() => {
     setSubtotal(calculateSubtotal());
   }, [selectedProducts, productData]);
@@ -57,9 +87,18 @@ const FormTotal: React.FC<ProductListProps> = ({
   useEffect(() => {
     let discountValue = 0;
     if (formik.values.discount_type === 'nominal') {
-      discountValue = formik.values.discount;
+      discountValue = formik.values.discount || 0;
+      if (subtotal === 0) {
+        setFormattedDisc('');
+        formik.setFieldValue('discount', '');
+      } else if (discountValue > subtotal) {
+        discountValue = subtotal;
+        formik.setFieldValue('discount', discountValue);
+        setFormattedDisc(inputRupiah(discountValue.toString()));
+      }
     } else if (formik.values.discount_type === 'percentage') {
-      discountValue = (subtotal * formik.values.discount) / 100;
+      discountValue = Math.round((subtotal * formik.values.discount) / 100);
+      setDiscountAmount(discountValue);
     }
 
     let newTotal = subtotal - discountValue;
@@ -68,9 +107,10 @@ const FormTotal: React.FC<ProductListProps> = ({
 
     let taxValue = 0;
     if (formik.values.tax_type === 'nominal') {
-      taxValue = formik.values.tax;
+      taxValue = formik.values.tax || 0;
     } else if (formik.values.tax_type === 'percentage') {
       taxValue = Math.round((newTotal * formik.values.tax) / 100);
+      setTaxAmount(taxValue);
     }
 
     newTotal += taxValue;
@@ -84,6 +124,15 @@ const FormTotal: React.FC<ProductListProps> = ({
     subtotal,
   ]);
 
+  useEffect(() => {
+    setFormattedDisc('');
+    formik.setFieldValue('discount', '');
+  }, [formik.values.discount_type]);
+
+  useEffect(() => {
+    setFormattedTax('');
+    formik.setFieldValue('tax', '');
+  }, [formik.values.tax_type]);
   return (
     <>
       <div className="flex items-start justify-between">
@@ -107,6 +156,9 @@ const FormTotal: React.FC<ProductListProps> = ({
                   onChange={handlePriceChange}
                   value={formattedDisc}
                   className="rounded-br-xl rounded-tr-xl w-full h-full p-2 outline-none border border-gray-300 transition-colors duration-300 ease-in-out  focus:border-amber-200 focus:ring-0 bg-gray-50 text-gray-900 placeholder-gray-500"
+                  maxLength={
+                    formik.values.discount_type === 'percentage' ? 3 : undefined
+                  }
                 />
               </div>
             </div>
@@ -128,6 +180,9 @@ const FormTotal: React.FC<ProductListProps> = ({
                   value={formattedTax}
                   onChange={handlePriceChange}
                   className="rounded-br-xl rounded-tr-xl w-full h-full p-2 outline-none border border-gray-300 transition-colors duration-300 ease-in-out  focus:border-amber-200 focus:ring-0 bg-gray-50 text-gray-900 placeholder-gray-500"
+                  maxLength={
+                    formik.values.tax_type === 'percentage' ? 3 : undefined
+                  }
                 />
               </div>
             </div>
@@ -159,29 +214,36 @@ const FormTotal: React.FC<ProductListProps> = ({
           <div className="flex items-center justify-between">
             <div>Discount</div>
             <div>
-              -{''}
-              {formatPrice(
-                formik.values.discount_type === 'percentage'
-                  ? (subtotal * formik.values.discount) / 100
-                  : formik.values.discount,
-              )}
+              -{' '}
+              {formik.values.discount_type === 'percentage' &&
+              discountAmount > 0
+                ? formatPrice(discountAmount)
+                : formik.values.discount > 0
+                  ? formatPrice(formik.values.discount)
+                  : 'Rp 0'}
             </div>
           </div>
           <div className="flex items-center justify-between">
             <div>Shipping</div>
-            <div>{formatPrice(formik.values.shipping_cost)}</div>
+            <div>
+              +{' '}
+              {formatPrice(
+                formik.values.shipping_cost ? formik.values.shipping_cost : 0,
+              )}
+            </div>
           </div>
           <div className="flex items-center justify-between">
             <div>Tax</div>
             <div>
+              +{' '}
               {formatPrice(
                 formik.values.tax_type === 'percentage'
-                  ? (totalPayment * formik.values.tax) / 100
+                  ? taxAmount
                   : formik.values.tax,
               )}
             </div>
           </div>
-          <div className="flex items-center justify-between border-t border-gray-400 pt-2">
+          <div className="flex items-center justify-between border-t border-gray-400 pt-2 text-lg font-semibold">
             <div>Total Payment</div>
             <div>{formatPrice(totalPayment)}</div>
           </div>

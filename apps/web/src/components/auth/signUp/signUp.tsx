@@ -31,8 +31,8 @@ const SignupUserForm = () => {
       setIsSubmitting(true);
       try {
         await axiosInstance().post('/users/v1', values);
-
-        toast.success('Email has been sent. Please check your inbox.');
+        router.push(`/auth/verification?email=${values.email}`);
+        // toast.success('Email has been sent. Please check your inbox.');
       } catch (error) {
         if (error instanceof AxiosError) {
           toast.error(

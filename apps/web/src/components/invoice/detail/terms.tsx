@@ -23,7 +23,7 @@ const Terms: React.FC<Props> = ({ invoice, recurring }) => {
           <div className="flex gap-5 items-center">
             <div className="flex gap-5 items-center">
               <div
-                className={`rounded-xl my-2 w-44 text-center p-2 outline-none border-2 border-gray-300 bg-gray-100`}
+                className={`rounded-xl my-2 w-44 text-center p-2 outline-none border border-gray-300 bg-gray-50`}
               >
                 {invoice.recurring
                   ? `${dayjs(recurring?.invoice_date).format('DD MMMM YYYY')}`
@@ -31,7 +31,7 @@ const Terms: React.FC<Props> = ({ invoice, recurring }) => {
               </div>
               <div>-</div>
               <div
-                className={`rounded-xl my-2 w-44 text-center p-2 outline-none border-2 border-gray-300 bg-gray-100`}
+                className={`rounded-xl my-2 w-44 text-center p-2 outline-none border border-gray-300 bg-gray-50`}
               >
                 {invoice.recurring
                   ? `${dayjs(invoice?.recurring_end).format('DD MMMM YYYY')}`
@@ -43,12 +43,12 @@ const Terms: React.FC<Props> = ({ invoice, recurring }) => {
             <>
               <div className="flex items-center">
                 <div
-                  className={`rounded-bl-xl rounded-tl-xl my-2 w-44 text-center p-2 outline-none border-y-2 border-l-2 border-gray-300 bg-gray-200`}
+                  className={`rounded-bl-xl rounded-tl-xl my-2 w-44 text-center p-2 outline-none border-y border-l border-gray-300 bg-gray-100`}
                 >
                   Repeat On
                 </div>
                 <div
-                  className={`rounded-br-xl rounded-tr-xl my-2 w-56 text-center p-2 outline-none border-2 border-gray-300 bg-gray-100`}
+                  className={`rounded-br-xl rounded-tr-xl my-2 w-56 text-center p-2 outline-none border border-gray-300 bg-gray-50`}
                 >
                   {invoice.recurring_interval > 1
                     ? `${invoice.recurring_interval} days`
@@ -57,12 +57,12 @@ const Terms: React.FC<Props> = ({ invoice, recurring }) => {
               </div>
               <div className="flex items-center">
                 <div
-                  className={`rounded-bl-xl rounded-tl-xl my-2 w-44 text-center p-2 outline-none border-y-2 border-l-2 border-gray-300 bg-gray-200`}
+                  className={`rounded-bl-xl rounded-tl-xl my-2 w-44 text-center p-2 outline-none border-y border-l border-gray-300 bg-gray-100`}
                 >
                   Recurring No
                 </div>
                 <div
-                  className={`rounded-br-xl rounded-tr-xl my-2 w-56 text-center p-2 outline-none border-2 border-gray-300 bg-gray-100`}
+                  className={`rounded-br-xl rounded-tr-xl my-2 w-56 text-center p-2 outline-none border border-gray-300 bg-gray-50`}
                 >
                   #{invoice.no_invoice}
                 </div>
@@ -75,24 +75,26 @@ const Terms: React.FC<Props> = ({ invoice, recurring }) => {
           <div className="flex flex-col">
             <div className="flex items-center">
               <div
-                className={`rounded-bl-xl rounded-tl-xl my-2 w-44 text-center p-2 outline-none border-y-2 border-l-2 border-gray-300 bg-gray-200`}
+                className={`rounded-bl-xl rounded-tl-xl my-2 w-44 text-center p-2 outline-none border-y border-l border-gray-300 bg-gray-100`}
               >
-                {`Net ${invoice.payment_terms}`}
+                {invoice.payment_terms === 0
+                  ? 'Due on Receipt'
+                  : `Net ${invoice.payment_terms}`}
               </div>
               <div
-                className={`rounded-br-xl rounded-tr-xl my-2 w-56 text-center p-2 outline-none border-2 border-gray-300 bg-gray-100`}
+                className={`rounded-br-xl rounded-tr-xl my-2 w-56 text-center p-2 outline-none border border-gray-300 bg-gray-50`}
               >
                 {dayjs(invoice?.due_date).format('DD MMMM YYYY')}
               </div>
             </div>
             <div className="flex items-center">
               <div
-                className={`rounded-bl-xl rounded-tl-xl my-2 w-44 text-center p-2 outline-none border-y-2 border-l-2 border-gray-300 bg-gray-200`}
+                className={`rounded-bl-xl rounded-tl-xl my-2 w-44 text-center p-2 outline-none border-y border-l border-gray-300 bg-gray-100`}
               >
                 Payment Method
               </div>
               <div
-                className={`rounded-br-xl rounded-tr-xl my-2 w-56 text-center p-2 outline-none border-2 border-gray-300 bg-gray-100`}
+                className={`rounded-br-xl rounded-tr-xl my-2 w-56 text-center p-2 outline-none border border-gray-300 bg-gray-50`}
               >
                 {invoice.payment_method}
               </div>

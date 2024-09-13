@@ -6,6 +6,7 @@ import { Product } from '@/models/product.model';
 import { formatPrice } from '@/helpers/format';
 import { axiosInstance } from '@/libs/axios';
 import { useDebounce } from 'use-debounce';
+import { toast } from 'react-toastify';
 
 interface SelectedProduct {
   product_id: string;
@@ -74,6 +75,23 @@ const FormItem: React.FC<ProductListProps> = ({
   }, [isPOpen, debounceProduct]);
 
   const handlePSelect = (productId: string, productName: string) => {
+    const isProductSelected = selectedProducts.some(
+      (product) => product.product_id === productId,
+    );
+
+    if (isProductSelected) {
+      toast.info('This product has already been selected.', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+      });
+      return;
+    }
+
     const selectedProduct = products.find(
       (product) => product.id === productId,
     );
@@ -133,7 +151,7 @@ const FormItem: React.FC<ProductListProps> = ({
           <tbody className="bg-white text-sm">
             {selectedProducts.map((product, index) => (
               <tr key={index} className="h-24">
-                <td className="text-left w-44 px-2 py-2">
+                <td className="text-left w-44 px-4 py-2">
                   {product.product_id ? (
                     <div className="flex flex-col p-2 gap-2 w-full ">
                       <div
@@ -192,14 +210,15 @@ const FormItem: React.FC<ProductListProps> = ({
                   </div>
                 </td>
                 <td className="py-2 w-5">
-                  <div className="flex items-start py-2 justify-center w-full h-full">
+                  <div className="flex items-center py-2  w-full h-full">
                     {product.product_id && (
-                      <div
+                      <button
+                        type="button"
                         onClick={() => handleRemoveProduct(index)}
                         className="text-lg text-red-600"
                       >
                         <IoMdClose />
-                      </div>
+                      </button>
                     )}
                   </div>
                 </td>
@@ -227,10 +246,10 @@ const FormItem: React.FC<ProductListProps> = ({
                   <li
                     key={product.id}
                     onClick={() => handlePSelect(product.id, product.name)}
-                    className="p-2 cursor-pointer hover:bg-gray-100 rounded-xl h-20 overflow-hidden my-2"
+                    className="p-2 cursor-pointer hover:bg-gray-100 rounded-xl h-24 overflow-hidden my-2 border border-gray-300 flex flex-col gap-1"
                   >
-                    <div className="font-semibold text-base justify-between flex items-start">
-                      <div className="capitalize">{product.name}</div>
+                    <div className="font-semibold text-base justify-between flex items-center border-b border-gray-300 pb-1">
+                      <div className="capitalize w-44">{product.name}</div>
                       <div>{formatPrice(product.price)}</div>
                     </div>
                     <div>{product.description}</div>

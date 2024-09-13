@@ -53,7 +53,7 @@ const Sidebar = () => {
       : 'flex flex-col gap-1 px-3';
 
   return (
-    <div className="w-56 h-screen py-5 z-30 sticky left-0 top-0 bg-white shadow-md">
+    <div className="w-56 h-screen py-5 z-30 sticky left-0 top-0 bg-white shadow-md lg:flex lg:flex-col hidden">
       <Link
         href={'/'}
         className="text-2xl font-semibold pb-5 border-b border-gray-300 mx-5 flex items-center gap-2 "

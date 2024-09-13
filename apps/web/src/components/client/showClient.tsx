@@ -107,12 +107,14 @@ const ClientList = () => {
   }, [valueSearch, sortBy, filterPayment, page]);
 
   useEffect(() => {
-    updateURL({
-      search: valueSearch,
-      payment: filterPayment,
-      sort: sortBy,
-      page,
-    });
+    const debounceUpdateURL = setTimeout(() => {
+      updateURL({
+        search: valueSearch,
+        payment: filterPayment,
+        sort: sortBy,
+        page,
+      });
+    }, 2000);
   }, [valueSearch, filterPayment, sortBy, page]);
 
   const disabledNext =
@@ -135,7 +137,7 @@ const ClientList = () => {
                   <input
                     type="text"
                     placeholder="Search client name/email/phone"
-                    className="placeholder-gray-500 outline-none w-full text-sm"
+                    className="placeholder-gray-500 outline-none w-full text-sm bg-gray-50"
                     value={search}
                     onChange={(e) => {
                       setSearch(e.target.value);
@@ -257,7 +259,7 @@ const ClientList = () => {
 
                     <td className="border-b px-4 py-2 text-center w-14 flex h-full items-center justify-center">
                       <Link href={`/client/${client.id}`}>
-                        <FiEdit className="text-center text-lg" />
+                        <FiEdit className="text-center text-lg text-amber-500" />
                       </Link>
                     </td>
                   </tr>

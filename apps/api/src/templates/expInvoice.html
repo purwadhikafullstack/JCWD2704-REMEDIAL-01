@@ -32,15 +32,26 @@
     <div class="container">
       <h1>Invoice Expired</h1>
       <p>Dear {{client_name}},</p>
-      <p>
-        We wanted to inform you that your invoice with the number
-        <strong>{{invoice_no}}</strong> has expired as of {{current_date}}. The
-        due date for this invoice was {{due_date}}.
-      </p>
-      <p>
-        If you have any questions or need further assistance, please feel free
-        to contact us at {{business_email}} or reply to this email.
-      </p>
+      <div>
+        <p>
+          We wanted to inform you that your invoice with the number
+          <strong>#{{invoice_no}}</strong> has expired as of {{current_date}}.
+          The due date for this invoice was {{due_date}}.
+        </p>
+        {{#if isRecurring}}
+        <p>
+          Please note that due to the expiration of this invoice, your recurring
+          subscription will be
+          <span style="font-weight: 700; color: #dc2626"
+            >temporarily suspended.</span
+          >
+        </p>
+        {{/if}}
+        <p>
+          If you have any questions or need further assistance, please feel free
+          to contact us at {{business_email}} or reply to this email.
+        </p>
+      </div>
       <p>Thank you for your attention to this matter.</p>
       <p>Best regards,</p>
       <p>{{business_name}}</p>

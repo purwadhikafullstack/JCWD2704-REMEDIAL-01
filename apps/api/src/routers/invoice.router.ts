@@ -6,6 +6,7 @@ import {
   validateRefreshToken,
   validateToken,
 } from '@/middlewares/auth.middleware';
+import { isVerified } from '@/middlewares/verified.middleware';
 import { Router } from 'express';
 
 export class InvoiceRouter {
@@ -19,7 +20,12 @@ export class InvoiceRouter {
   }
 
   private initializeRoutes(): void {
-    this.router.post('/c', validateToken, this.invoiceController.createInvoice);
+    this.router.post(
+      '/c',
+      validateToken,
+      isVerified,
+      this.invoiceController.createInvoice,
+    );
     this.router.get('/all', validateToken, this.invoiceController.allInvoice);
     this.router.get(
       '/rec/:invoiceId',
@@ -29,16 +35,19 @@ export class InvoiceRouter {
     this.router.patch(
       '/p/:invoiceId',
       validateToken,
+      isVerified,
       this.invoiceController.paidInvoice,
     );
     this.router.patch(
       '/ci/:invoiceId',
       validateToken,
+      isVerified,
       this.invoiceController.cancelInvoice,
     );
     this.router.delete(
       '/d/:invoiceId',
       validateToken,
+      isVerified,
       this.invoiceController.deleteInvoice,
     );
     this.router.get(

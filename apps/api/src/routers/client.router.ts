@@ -6,6 +6,7 @@ import {
   validateRefreshToken,
   validateToken,
 } from '@/middlewares/auth.middleware';
+import { isVerified } from '@/middlewares/verified.middleware';
 import { Router } from 'express';
 
 export class ClientRouter {
@@ -22,17 +23,20 @@ export class ClientRouter {
     this.router.post(
       '/c',
       validateToken,
+      isVerified,
       blobUploader().single('image'),
       this.clientController.createClient,
     );
     this.router.patch(
       '/e/:clientId',
       validateToken,
+      isVerified,
       this.clientController.updateClient,
     );
     this.router.delete(
       '/d/:clientId',
       validateToken,
+      isVerified,
       this.clientController.deleteClient,
     );
     this.router.get('/all', validateToken, this.clientController.allClient);

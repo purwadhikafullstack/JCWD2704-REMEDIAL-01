@@ -29,6 +29,8 @@ model User {
   is_verified    Boolean   @default(false)
   image          Bytes?    @db.LongBlob
   reqEmailChange Boolean   @default(false)
+  token          String?
+  tokenExp       DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   Business       Business?
@@ -127,6 +129,7 @@ model Invoice {
   due_date           DateTime
   recurring_end      DateTime?
   idNowRecurring     String?
+  sendAt             DateTime?
   paidAt             DateTime?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
@@ -163,8 +166,10 @@ model RecurringInvoice {
   tax           Float?
   status        Status
   due_date      DateTime
+  sendAt        DateTime?
   paidAt        DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
   cancelledAt   DateTime?
 }

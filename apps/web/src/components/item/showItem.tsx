@@ -18,6 +18,7 @@ const ItemList = () => {
   const [name, setName] = useState<string>('');
   const [product, setProduct] = useState<TProduct[]>([]);
   const [filterType, setFilterType] = useState<string>('');
+  const [filterDeleted, setFilterDeleted] = useState<string>('no');
   const [page, setPage] = useState<number>(1);
   const [limit, setLimit] = useState<number>(0);
   const [sortBy, setSortBy] = useState<string>('');
@@ -31,11 +32,13 @@ const ItemList = () => {
     const queryType = queryParams.get('type') || '';
     const querySort = queryParams.get('sort') || '';
     const queryPage = parseInt(queryParams.get('page') || '1', 10);
+    const queryDeleted = queryParams.get('deleted') || '';
 
     setName(queryName);
     setFilterType(queryType);
     setSortBy(querySort);
     setPage(queryPage);
+    setFilterDeleted(queryDeleted);
   }, []);
 
   const updateURL = (newParams: Record<string, any>) => {
@@ -60,6 +63,8 @@ const ItemList = () => {
         name: valueName,
         ...(filterType && { type: filterType }),
         ...(sortBy && { sort: sortBy }),
+        ...(filterType && { type: filterType }),
+        ...(filterDeleted && { deleted: filterDeleted }),
         page,
       };
 
@@ -101,19 +106,22 @@ const ItemList = () => {
 
   useEffect(() => {
     setPage(1);
-  }, [valueName, filterType, sortBy]);
+  }, [valueName, filterType, filterDeleted, sortBy]);
 
   useEffect(() => {
     fetchOrder();
-  }, [valueName, sortBy, filterType, page]);
+  }, [valueName, sortBy, filterType, filterDeleted, page]);
 
   useEffect(() => {
-    updateURL({
-      name: valueName,
-      type: filterType,
-      sort: sortBy,
-      page,
-    });
+    const debounceUpdateURL = setTimeout(() => {
+      updateURL({
+        name: valueName,
+        type: filterType,
+        sort: sortBy,
+        deleted: filterDeleted,
+        page,
+      });
+    }, 2000);
   }, [valueName, filterType, sortBy, page]);
 
   const disabledNext =
@@ -123,20 +131,20 @@ const ItemList = () => {
 
   return (
     <>
-      <section className="tracking-tighter p-10 rounded-xl h-full flex flex-col justify-between gap-5">
+      <section className="tracking-tighter p-10 rounded-xl h-full  flex flex-col justify-between gap-5">
         <div className="flex flex-col gap-3 h-full ">
           <div className="flex flex-col gap-3 w-full bg-white rounded-xl px-5 py-3 shadow-sm border border-gray-200">
-            <div className="flex gap-5 items-center w-full lg:justify-between lg:flex-row flex-col">
+            <div className="flex gap-5 items-center w-full lg:justify-between lg:flex-row flex-col ">
               <div className="flex items-center gap-5">
-                <div className="pr-5 text-3xl font-semibold border-r-2 border-gray-300 w-36">
+                <div className="pr-3 text-3xl font-semibold border-r-2 border-gray-300 w-32 ">
                   Items
                 </div>
-                <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-2 shadow-sm w-full lg:w-[300px] border border-gray-300">
+                <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-2 shadow-sm w-full lg:w-52 border border-gray-300">
                   <BiSearch />
                   <input
                     type="text"
                     placeholder="Search item name"
-                    className="placeholder-gray-500 outline-none w-full text-sm"
+                    className="placeholder-gray-500 outline-none bg-gray-50 w-full text-sm"
                     value={name}
                     onChange={(e) => {
                       setName(e.target.value);
@@ -147,7 +155,7 @@ const ItemList = () => {
                 <div className="flex items-center">
                   <select
                     id="type"
-                    className="bg-gray-50 border border-gray-300 text-gray-500 text-sm lg:text-sm rounded-xl focus:ring-primary-600 focus:border-primary-600 min-h-10 px-2 block w-full h-full lg:w-28"
+                    className="bg-gray-50 outline-none border border-gray-300 text-gray-500 text-sm lg:text-sm rounded-xl focus:ring-primary-600 focus:border-primary-600 min-h-10 px-2 block w-full h-full lg:w-28"
                     value={filterType}
                     onChange={(e) => {
                       setFilterType(e.target.value);
@@ -161,8 +169,22 @@ const ItemList = () => {
                 </div>
                 <div className="flex items-center">
                   <select
+                    id="type"
+                    className="bg-gray-50 outline-none border border-gray-300 text-gray-500 text-sm lg:text-sm rounded-xl focus:ring-primary-600 focus:border-primary-600 min-h-10 px-2 block w-full h-full lg:w-28"
+                    value={filterDeleted}
+                    onChange={(e) => {
+                      setFilterDeleted(e.target.value);
+                      updateURL({ deleted: e.target.value, page: 1 });
+                    }}
+                  >
+                    <option value="no">Available</option>
+                    <option value="yes">Deleted</option>
+                  </select>
+                </div>
+                <div className="flex items-center">
+                  <select
                     id="sort"
-                    className="bg-gray-50 border border-gray-300 text-gray-500 text-sm lg:text-sm rounded-xl focus:ring-primary-600 focus:border-primary-600 min-h-10 px-2 block w-full h-full lg:w-28"
+                    className="bg-gray-50 outline-none border border-gray-300 text-gray-500 text-sm lg:text-sm rounded-xl focus:ring-primary-600 focus:border-primary-600 min-h-10 px-2 block w-full h-full lg:w-28"
                     value={sortBy}
                     onChange={(e) => {
                       setSortBy(e.target.value);
@@ -225,7 +247,10 @@ const ItemList = () => {
                 </tr>
               ) : (
                 product.map((product, index) => (
-                  <tr key={product.id}>
+                  <tr
+                    key={product.id}
+                    className={`${product.deletedAt ? 'text-red-600' : ''}`}
+                  >
                     <td className="border-b px-4 py-2 text-center w-16">
                       {index + 1}
                     </td>
@@ -246,7 +271,7 @@ const ItemList = () => {
                     </td>
                     <td className="border-b px-4 py-2 text-center w-14 flex h-full items-center justify-center">
                       <Link href={`/item/${product.id}`}>
-                        <FiEdit className="text-center text-lg" />
+                        <FiEdit className="text-center text-lg text-amber-500" />
                       </Link>
                     </td>
                   </tr>

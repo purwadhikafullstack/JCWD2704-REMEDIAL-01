@@ -98,7 +98,7 @@ export class UserController {
     }
   }
 
-  async reverifyEmail(req: Request, res: Response) {
+  async reverifyEmail(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await userServices.reverifyEmail(req);
 
@@ -111,18 +111,89 @@ export class UserController {
         message: 'User email has been verified',
       });
     } catch (error) {
-      if (error instanceof Error) {
-        if (
-          error.message === 'Token is required' ||
-          error.message === 'Invalid or expired token'
-        ) {
-          res.status(400).json({ message: error.message });
-        } else {
-          res.status(500).json({ message: error.message });
-        }
+      // if (error instanceof Error) {
+      //   if (
+      //     error.message === 'Token is required' ||
+      //     error.message === 'Invalid or expired token'
+      //   ) {
+      //     res.status(400).json({ message: error.message });
+      //   } else {
+      //     res.status(500).json({ message: error.message });
+      //   }
+      // } else {
+      //   res.status(500).json({ message: 'Unknown error occurred' });
+      // }
+      next(error);
+    }
+  }
+
+  async resendEmail(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const result = await userServices.resendVerification(req);
+
+      if (result.message === 'Internal server error') {
+        res.status(500).send({ message: result.message });
       } else {
-        res.status(500).json({ message: 'Unknown error occurred' });
+        res
+          .status(200)
+          .send({ message: result.message, email: result.email || '' });
       }
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async sendVerif(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await userServices.sendVerification(req);
+
+      if (result) {
+        res.status(200).json({
+          is_verified: result.is_verified,
+          message: result.message,
+          user: result.user,
+        });
+      } else {
+        res.status(400).send({ message: 'Verification failed' });
+      }
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async verifyTokenUser(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await userServices.verifyTokenUser(req);
+
+      if (result) {
+        res.status(200).json({
+          result,
+        });
+      } else {
+        res.status(400).send({ message: 'Verification failed' });
+      }
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async resendReverify(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await userServices.resendReverify(req);
+
+      if (result.message === 'Internal server error') {
+        res.status(500).send({ message: result.message });
+      } else {
+        res
+          .status(200)
+          .send({ message: result.message, email: result.email || '' });
+      }
+    } catch (error) {
+      next(error);
     }
   }
 
