@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE `user` ADD COLUMN `token` VARCHAR(191) NULL,
+    ADD COLUMN `tokenExp` DATETIME(3) NULL;
